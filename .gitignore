@@ -1,0 +1,26 @@
+# Claude local settings
+.claude/
+
+# Dependencies
+node_modules/
+
+# Third-party cloned repo (reference only)
+infiplot/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Build
+.next/
+out/
+dist/

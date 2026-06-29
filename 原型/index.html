@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ApplePie — 原型预览</title>
+<style>
+/* ===== Reset & Base ===== */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --apple-green:#7CB342;--apple-red:#E57373;--apple-blue:#64B5F6;
+  --apple-orange:#FFB74D;--apple-purple:#BA68C8;
+  --bg:#FFFAF5;--card:#FFFFFF;--text:#3E2723;--text2:#8D6E63;
+  --border:#E8D5C8;--radius:18px;--radius-sm:12px;
+  --learn:#64B5F6;--rest:#81C784;--sport:#FFB74D;--social:#BA68C8;--explore:#4FC3F7;
+  --shadow:0 2px 16px rgba(62,39,35,0.06);
+}
+body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:#EDE7E0;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:20px}
+/* ===== Phone Frame ===== */
+.phone{width:390px;height:844px;background:var(--bg);border-radius:40px;overflow:hidden;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.18),0 0 0 2px #222;display:flex;flex-direction:column}
+.phone-header{height:54px;background:#1a1a1a;display:flex;align-items:flex-end;justify-content:center;padding-bottom:8px;flex-shrink:0}
+.phone-notch{width:120px;height:28px;background:#111;border-radius:0 0 20px 20px;position:relative}
+.phone-notch::after{content:'';position:absolute;top:6px;right:14px;width:8px;height:8px;border-radius:50%;background:#1a3a4a}
+.screen{flex:1;overflow-y:auto;scroll-behavior:smooth;position:relative}
+.screen-inner{padding:20px 20px 30px;min-height:100%}
+/* ===== Typography ===== */
+.h1{font-size:26px;font-weight:700;color:var(--text);letter-spacing:-0.3px}
+.h2{font-size:20px;font-weight:700;color:var(--text)}
+.h3{font-size:16px;font-weight:600;color:var(--text)}
+.p{font-size:14px;color:var(--text2);line-height:1.6}
+.caption{font-size:12px;color:var(--text2)}
+.badge{font-size:11px;font-weight:600;padding:2px 10px;border-radius:20px;display:inline-block}
+/* ===== Nav ===== */
+.nav-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+.nav-back{width:36px;height:36px;border-radius:50%;background:var(--card);display:flex;align-items:center;justify-content:center;cursor:pointer;border:1px solid var(--border);font-size:14px}
+.nav-step{font-size:12px;color:var(--text2);font-weight:500}
+/* ===== Cards ===== */
+.card{background:var(--card);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);margin-bottom:16px}
+.card-sm{background:var(--card);border-radius:var(--radius-sm);padding:14px 16px;box-shadow:var(--shadow);margin-bottom:10px}
+/* ===== Buttons ===== */
+.btn{display:inline-flex;align-items:center;justify-content:center;padding:12px 28px;border-radius:30px;font-size:15px;font-weight:600;cursor:pointer;border:none;transition:all .2s}
+.btn-primary{background:var(--apple-green);color:#fff;width:100%}
+.btn-primary:hover{background:#689F38}
+.btn-outline{background:var(--card);border:2px solid var(--apple-green);color:var(--apple-green)}
+.btn-ghost{background:transparent;color:var(--text2)}
+/* ===== Step Indicator ===== */
+.steps{display:flex;gap:6px;margin-bottom:24px}
+.step-dot{flex:1;height:4px;border-radius:2px;background:var(--border)}
+.step-dot.on{background:var(--apple-green)}
+/* ===== Grade Grid ===== */
+.grade-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.grade-item{padding:16px 12px;background:var(--card);border:2px solid var(--border);border-radius:var(--radius-sm);text-align:center;cursor:pointer;transition:all .2s;font-size:14px;font-weight:500;color:var(--text)}
+.grade-item.sel{border-color:var(--apple-green);background:#F1F8E9;color:var(--apple-green);font-weight:700}
+/* ===== Subject Tags ===== */
+.tag-wrap{display:flex;flex-wrap:wrap;gap:8px}
+.tag{padding:8px 18px;border-radius:20px;font-size:13px;font-weight:500;cursor:pointer;border:1.5px solid var(--border);background:var(--card);color:var(--text2);transition:all .2s}
+.tag.sel{border-color:var(--apple-green);background:#F1F8E9;color:var(--apple-green);font-weight:600}
+/* ===== Theme Cards ===== */
+.theme-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.theme-card{padding:24px 16px;background:var(--card);border:2px solid var(--border);border-radius:var(--radius);text-align:center;cursor:pointer;transition:all .2s}
+.theme-card.sel{border-color:var(--apple-green);box-shadow:0 0 0 3px rgba(124,179,66,0.15)}
+.theme-emoji{font-size:40px;margin-bottom:8px}
+.theme-name{font-size:14px;font-weight:600;color:var(--text)}
+.theme-desc{font-size:11px;color:var(--text2);margin-top:4px}
+/* ===== Time Dimension Colors ===== */
+.dim-learn{background:var(--learn)}.dim-rest{background:var(--rest)}.dim-sport{background:var(--sport)}.dim-social{background:var(--social)}.dim-explore{background:var(--explore)}
+.dim-dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:6px;flex-shrink:0}
+/* ===== Progress Bars ===== */
+.bar-wrap{height:10px;border-radius:5px;background:#F0E8E0;overflow:hidden;flex:1}
+.bar-fill{height:100%;border-radius:5px;transition:width .6s}
+/* ===== Game Screen ===== */
+.game-bg{position:absolute;inset:0;background:linear-gradient(180deg,#1a1a3e 0%,#2d1b69 30%,#4a2c8a 60%,#1a1a2e 100%)}
+.game-content{position:relative;z-index:1;display:flex;flex-direction:column;justify-content:flex-end;min-height:100%;padding:20px}
+.game-scene-img{width:100%;height:280px;border-radius:var(--radius);background:linear-gradient(135deg,#1a237e 0%,#311b92 40%,#4a148c 70%,#1b5e20 100%);position:relative;overflow:hidden;margin-bottom:16px}
+.game-scene-img::after{content:'🌌';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:60px;opacity:.6}
+.game-text-area{background:rgba(0,0,0,.75);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:var(--radius);padding:20px;margin-bottom:12px}
+.game-narration{font-size:14px;color:rgba(255,255,255,.8);line-height:1.7;margin-bottom:12px}
+.game-dialogue{display:flex;gap:10px;align-items:flex-start}
+.game-avatar{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#FFB74D,#FF8A65);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px}
+.game-line{flex:1}
+.game-speaker{font-size:12px;color:rgba(255,255,255,.5);margin-bottom:4px}
+.game-speech{font-size:15px;color:#fff;line-height:1.6}
+.game-choices{margin-top:8px;display:flex;flex-direction:column;gap:8px}
+.game-choice{width:100%;padding:14px 18px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:30px;color:#fff;font-size:14px;cursor:pointer;text-align:left;transition:all .2s}
+.game-choice:hover{background:rgba(255,255,255,.2)}
+/* ===== Home Dashboard ===== */
+.greeting{margin-bottom:6px}
+.slogan{font-size:13px;color:var(--apple-green);font-weight:600;margin-bottom:20px}
+.today-card{background:linear-gradient(135deg,#558B2F,#7CB342);border-radius:var(--radius);padding:20px;color:#fff;margin-bottom:16px}
+.today-card .h2{color:#fff;margin-bottom:4px}
+.today-card .p{color:rgba(255,255,255,.85)}
+.today-progress{display:flex;gap:20px;margin-top:14px}
+.today-stat{text-align:center}
+.today-num{font-size:28px;font-weight:700}
+.today-label{font-size:11px;opacity:.8;margin-top:2px}
+.dim-bar{margin-top:14px}
+.dim-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:12px;color:rgba(255,255,255,.9)}
+.game-entry{background:var(--card);border-radius:var(--radius);padding:18px;display:flex;align-items:center;gap:14px;cursor:pointer;box-shadow:var(--shadow);margin-bottom:16px}
+.game-entry-emoji{font-size:36px}
+.game-entry-title{font-size:15px;font-weight:700;color:var(--text)}
+.game-entry-sub{font-size:12px;color:var(--text2);margin-top:2px}
+/* ===== AI Import ===== */
+.upload-zone{border:2px dashed var(--border);border-radius:var(--radius);padding:30px 20px;text-align:center;cursor:pointer;margin-bottom:16px;transition:all .2s;background:var(--card)}
+.upload-zone:hover{border-color:var(--apple-green)}
+.upload-icon{font-size:40px;margin-bottom:8px}
+.voice-bar{background:var(--card);border-radius:30px;padding:14px 20px;display:flex;align-items:center;gap:12px;margin-bottom:16px;box-shadow:var(--shadow)}
+.voice-dot{width:12px;height:12px;border-radius:50%;background:var(--apple-red);animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.voice-text{font-size:14px;color:var(--text2);flex:1}
+/* ===== Five Dim Analysis ===== */
+.radar-preview{width:200px;height:200px;margin:0 auto 20px;position:relative}
+.radar-preview svg{width:100%;height:100%}
+.analysis-alert{padding:12px 16px;border-radius:var(--radius-sm);margin-bottom:10px;font-size:13px;display:flex;align-items:center;gap:8px}
+.alert-warn{background:#FFF3E0;color:#E65100}
+.alert-good{background:#E8F5E9;color:#2E7D32}
+.alert-bad{background:#FFEBEE;color:#C62828}
+/* ===== Parent View ===== */
+.report-header{text-align:center;padding:10px 0 20px}
+.report-week{font-size:13px;color:var(--text2)}
+.highlight-card{background:linear-gradient(135deg,#FFF8E1,#FFF3E0);border-radius:var(--radius);padding:20px;margin-bottom:14px;text-align:center}
+.highlight-emoji{font-size:36px;margin-bottom:6px}
+.highlight-text{font-size:14px;color:#5D4037;line-height:1.6;font-weight:500}
+/* ===== Bottom Tabs ===== */
+.tabs{display:flex;border-top:1px solid var(--border);padding:8px 16px 20px;justify-content:space-between;position:sticky;bottom:0;background:var(--bg)}
+.tab{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10px;color:var(--text2);cursor:pointer}
+.tab.on{color:var(--apple-green)}
+.tab-icon{font-size:20px}
+/* ===== Transitions ===== */
+.screen-page{display:none}
+.screen-page.active{display:block;animation:fadeIn .3s}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.progress-steps{display:flex;align-items:center;justify-content:center;gap:0;margin:14px 0 20px}
+.progress-dot-wrap{display:flex;align-items:center}
+.progress-dot-num{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;background:var(--border);color:#fff}
+.progress-dot-num.done{background:var(--apple-green)}
+.progress-dot-num.curr{background:var(--apple-green);box-shadow:0 0 0 4px rgba(124,179,66,0.2)}
+.progress-line{width:40px;height:2px;background:var(--border);margin:0 6px}
+.progress-line.done{background:var(--apple-green)}
+/* ===== Chapter input ===== */
+.chapter-input{width:100%;padding:12px 16px;border:2px solid var(--border);border-radius:var(--radius-sm);font-size:14px;background:var(--card);color:var(--text);margin-top:6px}
+.chapter-input:focus{outline:none;border-color:var(--apple-green)}
+/* ===== Schedule preview ===== */
+.schedule-preview{background:var(--card);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
+.schedule-day{padding:14px 16px;border-bottom:1px solid var(--border);font-size:13px;font-weight:600;color:var(--text)}
+.schedule-day:last-child{border-bottom:none}
+.schedule-item{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text2);padding:4px 0}
+.schedule-time{font-weight:600;color:var(--text);min-width:74px;font-size:12px}
+/* ===== Notification ===== */
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 24px;border-radius:24px;font-size:13px;z-index:999;animation:toastIn .3s,toastOut .3s 2s forwards}
+@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(-10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+@keyframes toastOut{from{opacity:1}to{opacity:0}}
+</style>
+</head>
+<body>
+
+<div class="phone" id="app">
+  <div class="phone-header"><div class="phone-notch"></div></div>
+  <div class="screen" id="screen"></div>
+</div>
+
+<script>
+// ===== Navigation =====
+const pages = {};
+let currentPage = '';
+
+function render(pageId) {
+  currentPage = pageId;
+  document.getElementById('screen').innerHTML = pages[pageId] || '';
+  // Re-bind events for the new page
+  const fn = window['bind_' + pageId.replace(/-/g,'_')];
+  if (fn) fn();
+}
+
+// ===== Toast =====
+function toast(msg) {
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 2300);
+}
+
+// ===== Data Store =====
+const store = {
+  grade: '', textbook: '', nickname: '',
+  subjects: [],
+  chapters: {}, // { '数学': '第十四章 一次函数' }
+  theme: '',
+};
+
+// ══════════════════════════════════════════════════
+//  PAGE 0: Onboarding Step 1 — 年级 + 教材 + 昵称
+// ══════════════════════════════════════════════════
+pages['onboard-1'] = `
+<div class="screen-inner">
+  <div class="nav-bar">
+    <div class="nav-back" onclick="render('onboard-1')">←</div>
+    <div class="nav-step">1/3</div>
+  </div>
+  <div class="steps">
+    <div class="step-dot on"></div>
+    <div class="step-dot"></div>
+    <div class="step-dot"></div>
+  </div>
+  <h1 class="h1" style="margin-bottom:6px">你好 👋</h1>
+  <p class="p" style="margin-bottom:24px">先来认识一下你，我们会帮你更好地规划学习和生活。</p>
+
+  <div class="h3" style="margin-bottom:12px">我在读</div>
+  <div class="grade-grid" id="gradeGrid">
+    ${['初一','初二','初三','高一','高二','高三'].map(g =>
+      `<div class="grade-item" data-grade="${g}" onclick="selGrade(this,'${g}')">${g}</div>`
+    ).join('')}
+  </div>
+
+  <div class="h3" style="margin-top:20px;margin-bottom:12px">教材版本</div>
+  <div class="tag-wrap" id="txtGrid">
+    ${['人教版','北师大版','苏教版','沪教版','浙教版','其他'].map(t =>
+      `<span class="tag" data-txt="${t}" onclick="selTextbook(this,'${t}')">${t}</span>`
+    ).join('')}
+  </div>
+
+  <div class="h3" style="margin-top:20px;margin-bottom:12px">大家怎么叫你</div>
+  <input class="chapter-input" id="nickInput" placeholder="输入你的昵称" oninput="store.nickname=this.value" value="${store.nickname}">
+
+  <div style="margin-top:30px">
+    <button class="btn btn-primary" onclick="goOnboard2()">下一步 →</button>
+  </div>
+</div>`;
+
+function selGrade(el, g) {
+  document.querySelectorAll('#gradeGrid .grade-item').forEach(i=>i.classList.remove('sel'));
+  el.classList.add('sel');
+  store.grade = g;
+}
+function selTextbook(el, t) {
+  document.querySelectorAll('#txtGrid .tag').forEach(i=>i.classList.remove('sel'));
+  el.classList.add('sel');
+  store.textbook = t;
+}
+function goOnboard2() {
+  if (!store.grade) return toast('请选择年级');
+  if (!store.textbook) return toast('请选择教材版本');
+  if (!store.nickname.trim()) return toast('请输入昵称');
+  store.nickname = document.getElementById('nickInput')?.value || store.nickname;
+  render('onboard-2');
+}
+window['bind_onboard-1'] = function() {
+  // restore selection
+  if (store.grade) {
+    const gi = document.querySelector(`[data-grade="${store.grade}"]`);
+    if (gi) gi.classList.add('sel');
+  }
+  if (store.textbook) {
+    const ti = document.querySelector(`[data-txt="${store.textbook}"]`);
+    if (ti) ti.classList.add('sel');
+  }
+};
+
+// ══════════════════════════════════════════════════
+//  PAGE 1: Onboarding Step 2 — 学科 + 章节
+// ══════════════════════════════════════════════════
+pages['onboard-2'] = `
+<div class="screen-inner">
+  <div class="nav-bar">
+    <div class="nav-back" onclick="render('onboard-1')">←</div>
+    <div class="nav-step">2/3</div>
+  </div>
+  <div class="steps">
+    <div class="step-dot on"></div>
+    <div class="step-dot on"></div>
+    <div class="step-dot"></div>
+  </div>
+  <h1 class="h1" style="margin-bottom:6px">你在学什么</h1>
+  <p class="p" style="margin-bottom:24px">选择你的学科和当前章节，AI 游戏会围绕这些内容展开。</p>
+
+  <div class="h3" style="margin-bottom:12px">学科</div>
+  <div class="tag-wrap" id="subjGrid">
+    ${['语文','数学','英语','物理','化学','生物','历史','地理'].map(s =>
+      `<span class="tag" data-subj="${s}" onclick="selSubject(this,'${s}')">${s}</span>`
+    ).join('')}
+  </div>
+
+  <div id="chapterArea" style="margin-top:16px"></div>
+
+  <div style="margin-top:30px">
+    <button class="btn btn-primary" onclick="goOnboard3()">下一步 →</button>
+  </div>
+</div>`;
+
+let selSubjs = new Set(store.subjects);
+function selSubject(el, s) {
+  if (selSubjs.has(s)) { selSubjs.delete(s); el.classList.remove('sel'); }
+  else { selSubjs.add(s); el.classList.add('sel'); }
+  store.subjects = [...selSubjs];
+  renderChapterInputs();
+}
+function renderChapterInputs() {
+  const area = document.getElementById('chapterArea');
+  if (!area) return;
+  area.innerHTML = [...selSubjs].map(s => `
+    <div style="margin-bottom:12px">
+      <label class="caption" style="font-weight:600">📖 ${s} — 当前章节</label>
+      <input class="chapter-input" data-subj="${s}" placeholder="如：第十四章 一次函数"
+        value="${store.chapters[s]||''}" oninput="store.chapters['${s}']=this.value">
+    </div>
+  `).join('');
+}
+function goOnboard3() {
+  if (selSubjs.size === 0) return toast('请至少选择一个学科');
+  // collect chapters
+  document.querySelectorAll('#chapterArea input').forEach(inp => {
+    store.chapters[inp.dataset.subj] = inp.value;
+  });
+  render('onboard-3');
+}
+window['bind_onboard-2'] = function() {
+  selSubjs = new Set(store.subjects);
+  document.querySelectorAll('#subjGrid .tag').forEach(el => {
+    if (selSubjs.has(el.dataset.subj)) el.classList.add('sel');
+  });
+  renderChapterInputs();
+};
+
+// ══════════════════════════════════════════════════
+//  PAGE 2: Onboarding Step 3 — 故事主题
+// ══════════════════════════════════════════════════
+pages['onboard-3'] = `
+<div class="screen-inner">
+  <div class="nav-bar">
+    <div class="nav-back" onclick="render('onboard-2')">←</div>
+    <div class="nav-step">3/3</div>
+  </div>
+  <div class="steps">
+    <div class="step-dot on"></div>
+    <div class="step-dot on"></div>
+    <div class="step-dot on"></div>
+  </div>
+  <h1 class="h1" style="margin-bottom:6px">选一个主题故事</h1>
+  <p class="p" style="margin-bottom:24px">选一个你感兴趣的故事背景，知识点会藏在冒险里。</p>
+
+  <div class="theme-grid" id="themeGrid">
+    ${[
+      {emoji:'🌌',name:'星际探险',desc:'穿越星系，用数学和物理破解宇宙谜题',tag:'数理向'},
+      {emoji:'🏛️',name:'古文明解密',desc:'在遗迹中解读古文、推演历史真相',tag:'文史向'},
+      {emoji:'🌿',name:'生态守护',desc:'守护濒危物种，探索生命科学的奥秘',tag:'生物/地理向'},
+      {emoji:'🎲',name:'随机惊喜',desc:'交给 AI 决定，每次都是新体验',tag:'综合向'},
+    ].map(t => `
+      <div class="theme-card" data-theme="${t.name}" onclick="selTheme(this,'${t.name}')">
+        <div class="theme-emoji">${t.emoji}</div>
+        <div class="theme-name">${t.name}</div>
+        <div class="theme-desc">${t.desc}</div>
+      </div>
+    `).join('')}
+  </div>
+
+  <div style="margin-top:30px">
+    <button class="btn btn-primary" onclick="goHome()">🎮 开始 ApplePie</button>
+  </div>
+</div>`;
+
+function selTheme(el, t) {
+  document.querySelectorAll('#themeGrid .theme-card').forEach(i=>i.classList.remove('sel'));
+  el.classList.add('sel');
+  store.theme = t;
+}
+function goHome() {
+  if (!store.theme) return toast('请选择一个主题故事');
+  toast('🎉 配置完成！欢迎来到 ApplePie');
+  setTimeout(() => render('home'), 800);
+}
+window['bind_onboard-3'] = function() {
+  if (store.theme) {
+    const ti = document.querySelector(`[data-theme="${store.theme}"]`);
+    if (ti) ti.classList.add('sel');
+  }
+};
+
+// ══════════════════════════════════════════════════
+//  PAGE 3: Home Dashboard
+// ══════════════════════════════════════════════════
+pages['home'] = `
+<div class="screen-inner">
+  <div class="nav-bar">
+    <div class="h2">🍎 ApplePie</div>
+    <div class="badge" style="background:#F1F8E9;color:#558B2F">${store.grade} · ${store.nickname}</div>
+  </div>
+
+  <p class="slogan">AppleU，成长可以快乐，把童年还给孩子。</p>
+
+  <!-- Today Card -->
+  <div class="today-card">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div class="h2">📅 6月29日 周日</div>
+        <div class="p">今天还有 3 项待完成</div>
+      </div>
+      <div class="badge" style="background:rgba(255,255,255,.25);color:#fff">完成 5/8</div>
+    </div>
+    <div class="today-progress">
+      <div class="today-stat"><div class="today-num">3</div><div class="today-label">待完成</div></div>
+      <div class="today-stat"><div class="today-num">2.5h</div><div class="today-label">已规划</div></div>
+      <div class="today-stat"><div class="today-num">62%</div><div class="today-label">学习占比</div></div>
+    </div>
+    <div class="dim-bar">
+      <div class="dim-row"><span class="dim-dot dim-learn"></span>学习 2.5h</div>
+      <div class="dim-row"><span class="dim-dot dim-rest"></span>休息 1h</div>
+      <div class="dim-row"><span class="dim-dot dim-sport"></span>运动 0.5h</div>
+      <div class="dim-row"><span class="dim-dot dim-explore"></span>探索 0h <span style="opacity:.7">— 未安排</span></div>
+    </div>
+  </div>
+
+  <!-- AI Game Entry -->
+  <div class="game-entry" onclick="render('game-play')">
+    <div class="game-entry-emoji">${store.theme==='星际探险'?'🌌':store.theme==='古文明解密'?'🏛️':store.theme==='生态守护'?'🌿':'🎲'}</div>
+    <div style="flex:1">
+      <div class="game-entry-title">继续 ${store.theme || 'AI 互动游戏'}</div>
+      <div class="game-entry-sub">今日目标：巩固二次函数图像性质 · 预计 20min</div>
+    </div>
+    <div style="font-size:20px;color:var(--text2)">→</div>
+  </div>
+
+  <!-- Time Management Entry -->
+  <div class="card-sm" style="display:flex;align-items:center;gap:12px;cursor:pointer" onclick="render('time-import')">
+    <div style="font-size:28px">📷</div>
+    <div style="flex:1"><div style="font-weight:600;color:var(--text);font-size:14px">导入本周课表</div><div class="caption">拍照或语音，AI 自动生成日程</div></div>
+    <div style="font-size:18px;color:var(--text2)">→</div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:6px">
+    <div class="card-sm" style="text-align:center;cursor:pointer" onclick="render('five-dim')">
+      <div style="font-size:28px">📊</div><div style="font-size:13px;font-weight:600;color:var(--text)">五维健康度</div>
+    </div>
+    <div class="card-sm" style="text-align:center;cursor:pointer" onclick="render('parent-report')">
+      <div style="font-size:28px">👨‍👩‍👧</div><div style="font-size:13px;font-weight:600;color:var(--text)">切换到家长</div>
+    </div>
+  </div>
+
+  <!-- Bottom Tabs -->
+  <div class="tabs">
+    <div class="tab on"><div class="tab-icon">🏠</div>首页</div>
+    <div class="tab" onclick="render('time-import')"><div class="tab-icon">📅</div>时间</div>
+    <div class="tab" onclick="render('game-play')"><div class="tab-icon">🎮</div>游戏</div>
+    <div class="tab" onclick="render('parent-report')"><div class="tab-icon">👤</div>成长</div>
+  </div>
+</div>`;
+
+// ══════════════════════════════════════════════════
+//  PAGE 4: Time Management — AI Import
+// ══════════════════════════════════════════════════
+pages['time-import'] = `
+<div class="screen-inner">
+  <div class="nav-bar">
+    <div class="nav-back" onclick="render('home')">←</div>
+    <div class="h2">📅 导入日程</div>
+  </div>
+  <p class="p" style="margin-bottom:20px">拍照上传课表，或语音描述你的安排，AI 自动生成时间表。</p>
+
+  <!-- Image Upload -->
+  <div class="upload-zone" id="uploadZone" onclick="simulateUpload()">
+    <div class="upload-icon">📸</div>
+    <div style="font-weight:600;color:var(--text);font-size:15px">点击上传课表照片</div>
+    <div class="caption" style="margin-top:4px">支持课程表、通知单、手写计划</div>
+  </div>
+
+  <!-- Voice Input -->
+  <div class="voice-bar" id="voiceBar" onclick="simulateVoice()">
+    <div class="voice-dot" id="voiceDot" style="background:var(--border)"></div>
+    <div class="voice-text" id="voiceText">点击说出你的安排，如"周二17点围棋课，周五19点篮球班"</div>
+    <div style="font-size:18px">🎤</div>
+  </div>
+
+  <!-- Generated Schedule Preview -->
+  <div id="scheduleResult"></div>
+
+  <button class="btn btn-primary" id="btnGen" onclick="showSchedule()" style="margin-top:8px">
+    ✨ 生成日程
+  </button>
+
+  <div class="tabs">
+    <div class="tab" onclick="render('home')"><div class="tab-icon">🏠</div>首页</div>
+    <div class="tab on"><div class="tab-icon">📅</div>时间</div>
+    <div class="tab" onclick="render('game-play')"><div class="tab-icon">🎮</div>游戏</div>
+    <div class="tab" onclick="render('parent-report')"><div class="tab-icon">👤</div>成长</div>
+  </div>
+</div>`;
+
+function simulateUpload() {
+  document.getElementById('uploadZone').innerHTML = '<div class="upload-icon">✅</div><div style="font-weight:600;color:var(--apple-green);font-size:15px">课表已识别</div><div class="caption" style="margin-top:4px">初二(3)班 · 2025春季学期</div>';
+  toast('📸 课表识别完成！');
+}
+function simulateVoice() {
+  const dot = document.getElementById('voiceDot');
+  const txt = document.getElementById('voiceText');
+  dot.style.background = 'var(--apple-red)';
+  dot.style.animation = 'pulse 1.5s infinite';
+  txt.textContent = '正在听...';
+  setTimeout(() => {
+    dot.style.background = 'var(--apple-green)';
+    dot.style.animation = 'none';
+    txt.textContent = '"周二下午5点到6点半围棋课在少年宫，周五晚上7点到8点半篮球班…"';
+    toast('🎤 语音识别完成！');
+  }, 1500);
+}
+function showSchedule() {
+  document.getElementById('scheduleResult').innerHTML = `
+    <div class="schedule-preview" style="margin-top:16px">
+      <div class="schedule-day" style="background:#F1F8E9;color:var(--apple-green)">
+        AI 解析结果 · 共识别 12 条日程
+        <span style="float:right;font-weight:400;font-size:11px">已自动归类五维</span>
+      </div>
+      <div class="schedule-day">
+        📚 周一
+        <div class="schedule-item"><span class="schedule-time">08:00-08:45</span>语文 · 教室</div>
+        <div class="schedule-item"><span class="schedule-time">09:00-09:45</span>数学 · 教室</div>
+        <div class="schedule-item"><span class="schedule-time">16:00-17:30</span>自习/作业 <span class="badge" style="background:#E3F2FD;color:#1976D2;font-size:10px">学习</span></div>
+      </div>
+      <div class="schedule-day">
+        🔍 周二
+        <div class="schedule-item"><span class="schedule-time">08:00-08:45</span>英语 · 教室</div>
+        <div class="schedule-item"><span class="schedule-time">17:00-18:30</span>围棋课 · 少年宫 <span class="badge" style="background:#E1F5FE;color:#0288D1;font-size:10px">探索</span></div>
+      </div>
+      <div class="schedule-day">
+        🏃 周五
+        <div class="schedule-item"><span class="schedule-time">08:00-08:45</span>物理 · 实验室</div>
+        <div class="schedule-item"><span class="schedule-time">19:00-20:30</span>篮球班 · 体育馆 <span class="badge" style="background:#FFF3E0;color:#E65100;font-size:10px">运动</span></div>
+      </div>
+      <div class="schedule-day" style="text-align:center">
+        <button class="btn btn-primary" style="width:auto;padding:10px 32px" onclick="render('five-dim')">
+          查看五维健康度分析 →
+        </button>
+      </div>
+    </div>`;
+  document.getElementById('btnGen').style.display = 'none';
+  setTimeout(() => document.getElementById('scheduleResult').scrollIntoView({behavior:'smooth'}), 100);
+}
+
+// ══════════════════════════════════════════════════
+//  PAGE 5: Five-Dimensional Health Analysis
+// ══════════════════════════════════════════════════
+pages['five-dim'] = `
+<div class="screen-inner">
+  <div class="nav-bar">
+    <div class="nav-back" onclick="render('home')">←</div>
+    <div class="h2">📊 五维健康度</div>
+  </div>
+
+  <!-- Radar Chart SVG -->
+  <div class="radar-preview">
+    <svg viewBox="0 0 200 200">
+      <!-- Background pentagon -->
+      <polygon points="100,20 176,76 148,160 52,160 24,76" fill="none" stroke="#E8D5C8" stroke-width="1.5"/>
+      <polygon points="100,50 154,90 131,140 69,140 46,90" fill="none" stroke="#E8D5C8" stroke-width="1" stroke-dasharray="4"/>
+      <polygon points="100,80 131,104 116,120 84,120 69,104" fill="none" stroke="#E8D5C8" stroke-width="1" stroke-dasharray="4"/>
+      <!-- Data -->
+      <polygon points="100,34 168,80 144,156 56,156 32,80" fill="rgba(124,179,66,0.15)" stroke="var(--apple-green)" stroke-width="2"/>
+      <!-- Dots -->
+      <circle cx="100" cy="34" r="4" fill="var(--learn)"/>
+      <circle cx="168" cy="80" r="4" fill="var(--sport)"/>
+      <circle cx="144" cy="156" r="4" fill="var(--rest)"/>
+      <circle cx="56" cy="156" r="4" fill="var(--social)"/>
+      <circle cx="32" cy="80" r="4" fill="var(--explore)"/>
+      <!-- Labels -->
+      <text x="100" y="12" text-anchor="middle" font-size="11" fill="#1976D2" font-weight="600">学习</text>
+      <text x="186" y="82" text-anchor="start" font-size="11" fill="#F57C00" font-weight="600">运动</text>
+      <text x="148" y="178" text-anchor="middle" font-size="11" fill="#388E3C" font-weight="600">休息</text>
+      <text x="52" y="178" text-anchor="middle" font-size="11" fill="#7B1FA2" font-weight="600">社交</text>
+      <text x="6" y="82" text-anchor="start" font-size="11" fill="#0288D1" font-weight="600">探索</text>
+    </svg>
+  </div>
+
+  <p class="p" style="text-align:center;margin-bottom:20px">6月23日 — 6月29日 · 本周分析</p>
+
+  <!-- Dimension Details -->
+  <div class="card">
+    <div style="font-weight:600;color:var(--text);margin-bottom:12px">各维度详情</div>
+    ${[
+      {label:'📚 学习',pct:58,color:'#1976D2',status:'⚠️ 偏高',advice:'建议减少30min刷题，用AI游戏替代',cls:'alert-warn'},
+      {label:'😴 休息',pct:22,color:'#388E3C',status:'✓ 正常',advice:'睡眠时间充足，继续保持',cls:'alert-good'},
+      {label:'🏃 运动',pct:8,color:'#F57C00',status:'⚠️ 偏低',advice:'只有篮球班，建议增加一次自主运动',cls:'alert-warn'},
+      {label:'💬 社交',pct:4,color:'#7B1FA2',status:'❌ 严重不足',advice:'推荐周末约朋友户外活动或一起打AI游戏',cls:'alert-bad'},
+      {label:'🔍 探索',pct:8,color:'#0288D1',status:'⚠️ 偏低',advice:'围棋课之外可以尝试AI互动游戏',cls:'alert-warn'},
+    ].map(d => `
+      <div class="analysis-alert ${d.cls}" style="margin-bottom:8px">
+        <span style="font-size:16px">${d.label.split(' ')[0]}</span>
+        <div style="flex:1">
+          <div style="font-weight:600;font-size:13px">${d.label.split(' ')[1]} <span style="font-size:11px;opacity:.7">${d.pct}% ${d.status}</span></div>
+          <div class="bar-wrap" style="margin-top:4px"><div class="bar-fill" style="width:${d.pct}%;background:${d.color}"></div></div>
+          <div style="font-size:11px;margin-top:3px;opacity:.8">💡 ${d.advice}</div>
+        </div>
+      </div>
+    `).join('')}
+  </div>
+
+  <div class="tabs">
+    <div class="tab" onclick="render('home')"><div class="tab-icon">🏠</div>首页</div>
+    <div class="tab on"><div class="tab-icon">📅</div>时间</div>
+    <div class="tab" onclick="render('game-play')"><div class="tab-icon">🎮</div>游戏</div>
+    <div class="tab" onclick="render('parent-report')"><div class="tab-icon">👤</div>成长</div>
+  </div>
+</div>`;
+
+// ══════════════════════════════════════════════════
+//  PAGE 6: AI Game Play
+// ══════════════════════════════════════════════════
+pages['game-play'] = `
+<div class="game-bg">
+  <div class="screen-inner" style="position:relative;z-index:1;display:flex;flex-direction:column;justify-content:flex-end;min-height:100%">
+    <div style="position:absolute;top:16px;left:20px;right:20px;display:flex;justify-content:space-between;align-items:center">
+      <div class="nav-back" style="background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.2);color:#fff" onclick="render('home')">←</div>
+      <div class="badge" style="background:rgba(255,255,255,.15);color:#fff">星际探险 · 第3幕</div>
+    </div>
+
+    <!-- Scene Image -->
+    <div class="game-scene-img" style="margin-top:50px"></div>
+
+    <!-- Text Area -->
+    <div class="game-text-area">
+      <div class="game-narration">
+        飞船的导航系统突然失灵，屏幕上闪烁着一行神秘的坐标公式。舰长艾拉转过头看着你——
+      </div>
+      <div class="game-dialogue">
+        <div class="game-avatar">👩‍🚀</div>
+        <div class="game-line">
+          <div class="game-speaker">舰长艾拉</div>
+          <div class="game-speech">
+            "这些坐标的轨迹是一条抛物线。如果我们想避开前方的陨石带，必须计算出它的顶点坐标。<em>y = x² - 4x + 3</em>，你知道顶点在哪吗？"
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Choices -->
+    <div class="game-choices">
+      <div class="game-choice" onclick="toast('✓ 正确！顶点在 (2, -1)');setTimeout(()=>render('home'),1200)">
+        🧮 "配方计算：顶点在 (2, -1)"
+      </div>
+      <div class="game-choice" onclick="toast('❌ 符号搞反了哦，配方时注意移项符号');setTimeout(()=>render('home'),1200)">
+        🤔 "尝试代入 x=1 和 x=3..."
+      </div>
+      <div class="game-choice" onclick="toast('有趣的选择！你倾向于动手验证而非纯计算')">
+        🔧 "让飞船先移动一段距离，观察轨迹再判断"
+      </div>
+    </div>
+  </div>
+</div>`;
+
+// ══════════════════════════════════════════════════
+//  PAGE 7: Parent View — Weekly Report
+// ══════════════════════════════════════════════════
+pages['parent-report'] = `
+<div class="screen-inner">
+  <div class="nav-bar">
+    <div class="nav-back" onclick="render('home')">←</div>
+    <div class="h2">👨‍👩‍👧 成长周报</div>
+    <div class="badge" style="background:#E8F5E9;color:#2E7D32">家长视角</div>
+  </div>
+
+  <div class="report-header">
+    <div class="h2">${store.nickname || '孩子'} 的本周成长</div>
+    <div class="report-week">6月23日 — 6月29日</div>
+  </div>
+
+  <!-- Highlight -->
+  <div class="highlight-card">
+    <div class="highlight-emoji">🌟</div>
+    <div class="highlight-text">
+      本周最大的闪光点：在 AI 游戏中选择了"动手验证"的路径 3 次，<br>
+      展现了强烈的<strong>实践探索精神</strong>。
+    </div>
+  </div>
+
+  <!-- Time Distribution -->
+  <div class="card" style="margin-bottom:14px">
+    <div class="h3" style="margin-bottom:12px">⏱ 时间分配</div>
+    ${[
+      {label:'学习',pct:58,color:'#1976D2',icon:'📚'},
+      {label:'休息',pct:22,color:'#388E3C',icon:'😴'},
+      {label:'运动',pct:8,color:'#F57C00',icon:'🏃'},
+      {label:'社交',pct:4,color:'#7B1FA2',icon:'💬'},
+      {label:'探索',pct:8,color:'#0288D1',icon:'🔍'},
+    ].map(d => `
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:13px">
+        <span>${d.icon}</span>
+        <span style="width:36px;font-weight:600;color:var(--text)">${d.label}</span>
+        <div class="bar-wrap"><div class="bar-fill" style="width:${d.pct}%;background:${d.color}"></div></div>
+        <span style="width:32px;text-align:right;font-weight:600;color:var(--text)">${d.pct}%</span>
+      </div>
+    `).join('')}
+    <div class="analysis-alert alert-warn" style="margin-top:10px">
+      💡 社交时间偏少，建议周末安排一次朋友聚会或集体运动
+    </div>
+  </div>
+
+  <!-- Game Insights -->
+  <div class="card" style="margin-bottom:14px">
+    <div class="h3" style="margin-bottom:12px">🎮 AI 游戏中的发现</div>
+    <div style="font-size:13px;color:var(--text2);line-height:1.8">
+      <p>· 本周完成 <strong>3 局</strong> AI 互动游戏</p>
+      <p>· 在"二次函数"相关挑战中正确率 <strong style="color:#E65100">67%</strong>（薄弱点）</p>
+      <p>· 在"文言文理解"挑战中正确率 <strong style="color:#2E7D32">92%</strong>（强项）</p>
+      <p>· 展现了 <strong>逻辑推理</strong> 和 <strong>动手验证</strong> 两种思维偏好</p>
+    </div>
+  </div>
+
+  <!-- Parent Growth Area -->
+  <div class="card">
+    <div class="h3" style="margin-bottom:12px">✍️ 你的反思（本周）</div>
+    <textarea class="chapter-input" rows="3" placeholder="这周我为孩子做了什么？哪些是孩子真正需要的？我自己有什么收获？" style="margin-bottom:10px"></textarea>
+    <button class="btn btn-primary" onclick="toast('💚 已保存。你的反思是给孩子最好的榜样。')">保存反思</button>
+  </div>
+
+  <!-- Bottom Nav -->
+  <div style="margin-top:16px;text-align:center">
+    <span class="caption" style="cursor:pointer;text-decoration:underline" onclick="render('home')">
+      🔄 切换到学生视角
+    </span>
+  </div>
+</div>`;
+
+// ══════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════
+render('onboard-1');
+</script>
+</body>
+</html>
