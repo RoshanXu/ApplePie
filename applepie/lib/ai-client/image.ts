@@ -274,8 +274,8 @@ async function generateImageOpenAiCompatible(
       model: config.model,
       prompt: prompt,
       n: 1,
-      // Session-locked aspect (16:9 default, 9:16 portrait for mobile).
-      size: options?.orientation === "portrait" ? "1024x1792" : "1792x1024",
+      // Session-locked aspect. Doubao Seedream requires ≥3,686,400 pixels.
+      size: options?.orientation === "portrait" ? "1440x2560" : "2560x1440",
     }),
     retries: options?.retries,
     timeoutMs: options?.timeoutMs,
