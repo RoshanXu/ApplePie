@@ -9,7 +9,7 @@ import { buildGameConfig } from "@applepie/game/configBuilder";
 export async function GET() {
   try {
     // TODO: Get studentId from auth session
-    const config = await buildGameConfig("mock-student-id", {
+    const config = await buildGameConfig("00000000-0000-0000-0000-000000000001", {
       theme: "space",
       difficulty: "normal",
       duration: 20,

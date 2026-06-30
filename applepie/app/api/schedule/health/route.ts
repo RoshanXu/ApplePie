@@ -9,7 +9,7 @@ import { prisma } from "@/lib/db/prisma";
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const studentId = searchParams.get("studentId") ?? "mock-student-id";
+    const studentId = searchParams.get("studentId") ?? "00000000-0000-0000-0000-000000000001";
     const grade = searchParams.get("grade") ?? "初二上";
 
     // Fetch from database

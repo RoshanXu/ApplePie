@@ -31,7 +31,7 @@ export async function POST(req: Request) {
 
   try {
     // 1. Build game config from student data
-    const config = await buildGameConfig("mock-student-id", {
+    const config = await buildGameConfig("00000000-0000-0000-0000-000000000001", {
       theme: body.theme ?? "space",
       difficulty: body.difficulty ?? "normal",
       duration: body.duration ?? 20,

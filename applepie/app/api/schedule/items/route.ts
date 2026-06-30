@@ -53,7 +53,7 @@ export async function POST(req: Request) {
 
     const item = await prisma.schedule.create({
       data: {
-        studentId: body.studentId ?? "mock-student-id", // TODO: from auth
+        studentId: body.studentId ?? "00000000-0000-0000-0000-000000000001", // TODO: from auth
         dayOfWeek: body.dayOfWeek,
         startTime: body.startTime,
         endTime: body.endTime,
