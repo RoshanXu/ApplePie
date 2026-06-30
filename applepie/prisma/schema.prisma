@@ -1,0 +1,289 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ===================================================================
+// Identity & Auth (extends Supabase auth.users)
+// ===================================================================
+
+model User {
+  id        String   @id @db.Uuid
+  role      Role     @default(student)
+  nickname  String
+  phone     String?
+  avatarUrl String?  @map("avatar_url")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  studentProfile    StudentProfile?         @relation("StudentUser")
+  parentBindings    ParentChildBinding[]     @relation("ParentBinding")
+  weeklyReportsRead WeeklyReport[]           @relation("ParentReport")
+
+  @@map("users")
+}
+
+enum Role {
+  student
+  parent
+}
+
+// ===================================================================
+// Student Profile & Learning Data
+// ===================================================================
+
+model StudentProfile {
+  userId         String   @id @map("user_id") @db.Uuid
+  grade          String   // e.g. "初二上"
+  textbookVersion String  @map("textbook_version") // e.g. "人教版"
+  onboardingDone Boolean  @default(false) @map("onboarding_done")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user              User                    @relation("StudentUser", fields: [userId], references: [id], onDelete: Cascade)
+  subjects          StudentSubject[]
+  knowledgePoints   StudentKnowledgePoint[]
+  schedules         Schedule[]
+  gameSessions      GameSession[]
+  gameResults       GameResult[]
+  abilityProfile    AbilityProfile?
+  bindings          ParentChildBinding[]     @relation("ChildBinding")
+  weeklyReports     WeeklyReport[]           @relation("StudentReport")
+
+  @@map("student_profiles")
+}
+
+model StudentSubject {
+  id             String   @id @default(uuid()) @db.Uuid
+  studentId      String   @map("student_id") @db.Uuid
+  subject        String   // e.g. "数学"
+  currentChapter String?  @map("current_chapter") // e.g. "第十四章 一次函数"
+  textbookUnit   String?  @map("textbook_unit")
+  masteryLevel   Float    @default(0.5) @map("mastery_level")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  student StudentProfile @relation(fields: [studentId], references: [userId], onDelete: Cascade)
+
+  @@unique([studentId, subject])
+  @@map("student_subjects")
+}
+
+// ===================================================================
+// Knowledge Points (Reference / Master Data)
+// ===================================================================
+
+model KnowledgePoint {
+  id              String   @id @default(uuid()) @db.Uuid
+  name            String   // e.g. "二次函数的图像与性质"
+  subject         String
+  grade           String
+  textbookVersion String  @map("textbook_version")
+  chapter         String?
+  parentId        String?  @map("parent_id") @db.Uuid
+  keywords        String[] @default([])
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  // Relations
+  parent         KnowledgePoint?          @relation("KnowledgePointHierarchy", fields: [parentId], references: [id])
+  children       KnowledgePoint[]         @relation("KnowledgePointHierarchy")
+  studentRecords StudentKnowledgePoint[]
+
+  @@index([subject, grade])
+  @@map("knowledge_points")
+}
+
+model StudentKnowledgePoint {
+  id               String    @id @default(uuid()) @db.Uuid
+  studentId        String    @map("student_id") @db.Uuid
+  knowledgePointId String    @map("knowledge_point_id") @db.Uuid
+  mastery          Mastery   @default(new)
+  lastPracticed    DateTime? @map("last_practiced")
+  practiceCount    Int       @default(0) @map("practice_count")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  student         StudentProfile @relation(fields: [studentId], references: [userId], onDelete: Cascade)
+  knowledgePoint  KnowledgePoint @relation(fields: [knowledgePointId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, knowledgePointId])
+  @@map("student_knowledge_points")
+}
+
+enum Mastery {
+  mastered
+  familiar
+  weak
+  new
+}
+
+// ===================================================================
+// Schedules (Timetable & Calendar)
+// ===================================================================
+
+model Schedule {
+  id          String       @id @default(uuid()) @db.Uuid
+  studentId   String       @map("student_id") @db.Uuid
+  dayOfWeek   Int          @map("day_of_week") // 0=Sun, 1=Mon...6=Sat
+  startTime   String       @map("start_time") // HH:mm format
+  endTime     String       @map("end_time") // HH:mm format
+  title       String
+  category    DimCategory  @default(learn)
+  location    String?
+  repeatType  RepeatType   @default(weekly) @map("repeat_type")
+  source      ImportSource @default(manual)
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  student StudentProfile @relation(fields: [studentId], references: [userId], onDelete: Cascade)
+
+  @@index([studentId, dayOfWeek])
+  @@map("schedules")
+}
+
+enum DimCategory {
+  learn   // 📚 学习
+  rest    // 😴 休息
+  sport   // 🏃 运动
+  social  // 💬 社交
+  explore // 🔍 探索
+}
+
+enum RepeatType {
+  weekly
+  once
+}
+
+enum ImportSource {
+  manual // 手动添加
+  ocr    // 图片识别
+  voice  // 语音解析
+  ai     // AI 推荐
+}
+
+// ===================================================================
+// Game Sessions & Results
+// ===================================================================
+
+model GameSession {
+  id                  String        @id @default(uuid()) @db.Uuid
+  studentId           String        @map("student_id") @db.Uuid
+  configJson          Json          @map("config_json") // ApplePieGameConfig
+  infiplotSessionJson Json?         @map("infiplot_session_json") // Full infiplot Session
+  theme               String        // e.g. "星际探险"
+  difficulty          Difficulty    @default(normal)
+  status              GameStatus    @default(active)
+  startedAt           DateTime      @default(now()) @map("started_at")
+  completedAt         DateTime?     @map("completed_at")
+  totalScenes         Int           @default(0) @map("total_scenes")
+  totalChoices        Int           @default(0) @map("total_choices")
+  actualDurationSecs  Int?          @map("actual_duration_secs")
+  createdAt           DateTime      @default(now()) @map("created_at")
+
+  student StudentProfile @relation(fields: [studentId], references: [userId], onDelete: Cascade)
+  result  GameResult?
+
+  @@index([studentId, startedAt(sort: Desc)])
+  @@map("game_sessions")
+}
+
+enum Difficulty {
+  easy
+  normal
+  hard
+}
+
+enum GameStatus {
+  active
+  completed
+  abandoned
+}
+
+model GameResult {
+  id                         String   @id @default(uuid()) @db.Uuid
+  gameSessionId              String   @unique @map("game_session_id") @db.Uuid
+  studentId                  String   @map("student_id") @db.Uuid
+  knowledgePointPerformance  Json     @default("[]") @map("knowledge_point_performance") // KnowledgePointPerformance[]
+  interestSignals            Json     @default("[]") @map("interest_signals") // InterestSignal[]
+  thinkingStyle              Json?    @map("thinking_style") // ThinkingStyle
+  rawAnalysis                Json?    @map("raw_analysis") // Full LLM analysis
+  createdAt                  DateTime @default(now()) @map("created_at")
+
+  session GameSession    @relation(fields: [gameSessionId], references: [id], onDelete: Cascade)
+  student StudentProfile @relation(fields: [studentId], references: [userId], onDelete: Cascade)
+
+  @@map("game_results")
+}
+
+// ===================================================================
+// Ability Profile (Aggregated, Rebuilt After Each Game)
+// ===================================================================
+
+model AbilityProfile {
+  id             String   @id @default(uuid()) @db.Uuid
+  studentId      String   @unique @map("student_id") @db.Uuid
+  knowledgeMap   Json     @default("{}") @map("knowledge_map") // {kpId: aggregatedMastery}
+  interestMap    Json     @default("{}") @map("interest_map")  // {category: strength_0_to_1}
+  thinkingTraits Json?    @map("thinking_traits") // cumulative ThinkingStyle
+  weaknessTags   String[] @default([]) @map("weakness_tags")
+  strengthTags   String[] @default([]) @map("strength_tags")
+  totalGames     Int      @default(0) @map("total_games")
+  updatedAt      DateTime @default(now()) @map("updated_at")
+
+  student StudentProfile @relation(fields: [studentId], references: [userId], onDelete: Cascade)
+
+  @@map("ability_profiles")
+}
+
+// ===================================================================
+// Parent-Child Binding
+// ===================================================================
+
+model ParentChildBinding {
+  id           String       @id @default(uuid()) @db.Uuid
+  parentId     String       @map("parent_id") @db.Uuid
+  studentId    String       @map("student_id") @db.Uuid
+  status       BindingStatus @default(pending)
+  bindingCode  String       @unique @map("binding_code") // 6-digit code
+  createdAt    DateTime     @default(now()) @map("created_at")
+
+  parent  User           @relation("ParentBinding", fields: [parentId], references: [id], onDelete: Cascade)
+  student StudentProfile @relation("ChildBinding", fields: [studentId], references: [userId], onDelete: Cascade)
+
+  @@unique([parentId, studentId])
+  @@map("parent_child_bindings")
+}
+
+enum BindingStatus {
+  pending
+  active
+  rejected
+}
+
+// ===================================================================
+// Parent Weekly Report
+// ===================================================================
+
+model WeeklyReport {
+  id                String   @id @default(uuid()) @db.Uuid
+  studentId         String   @map("student_id") @db.Uuid
+  parentId          String   @map("parent_id") @db.Uuid
+  weekStart         DateTime @map("week_start")
+  weekEnd           DateTime @map("week_end")
+  timeDistribution  Json     @default("{}") @map("time_distribution") // {learn: 58, rest: 22, ...}
+  gameSummary       Json?    @map("game_summary") // {totalGames, insights, ...}
+  highlights        Json?    // [highlightText, ...]
+  abilitySnapshot   Json?    @map("ability_snapshot")
+  parentReflection  String?  @map("parent_reflection")
+  generatedAt       DateTime @default(now()) @map("generated_at")
+
+  student StudentProfile @relation("StudentReport", fields: [studentId], references: [userId], onDelete: Cascade)
+  parent  User           @relation("ParentReport", fields: [parentId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, parentId, weekStart])
+  @@map("weekly_reports")
+}

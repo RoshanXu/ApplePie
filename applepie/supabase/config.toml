@@ -1,0 +1,21 @@
+# Supabase local development config
+# Run: supabase start (requires Docker)
+[api]
+port = 54321
+
+[db]
+port = 54322
+
+[studio]
+port = 54323
+
+[auth]
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["http://localhost:3000/auth/callback"]
+enable_signup = true
+
+# Phone OTP provider (configure SMS provider in Supabase dashboard for production)
+[ auth.sms ]
+enable_signup = true
+enable_confirmations = false
+template = "您的 ApplePie 验证码是：{{ .Code }}"
