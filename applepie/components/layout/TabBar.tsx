@@ -13,11 +13,6 @@ const TABS = [
 export function TabBar() {
   const pathname = usePathname();
 
-  // Hide TabBar on schedule pages (no need for navigation when editing schedules)
-  if (pathname === "/schedule" || pathname.startsWith("/schedule/")) {
-    return null;
-  }
-
   return (
     <nav className="fixed bottom-0 left-0 right-0 max-w-[430px] mx-auto bg-surface border-t border-border z-50">
       <div className="flex justify-around items-center h-14 px-2 pb-safe">

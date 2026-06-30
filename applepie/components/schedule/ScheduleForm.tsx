@@ -87,7 +87,7 @@ export function ScheduleForm({ initial, onSave, onCancel, onDelete, saving }: Sc
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-overlay" onClick={onCancel}>
+    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-overlay" onClick={onCancel}>
       <div
         className="w-full max-w-[430px] bg-background rounded-t-2xl max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}

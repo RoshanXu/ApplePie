@@ -574,7 +574,7 @@ export default function SchedulePage() {
       {/* Day Schedule List overlay (month view day tap) */}
       {dayListDate && (
         <div
-          className="fixed inset-0 z-40 flex items-end justify-center bg-overlay"
+          className="fixed inset-0 z-[60] flex items-end justify-center bg-overlay"
           onClick={() => setDayListDate(null)}
         >
           <div
@@ -668,7 +668,7 @@ export default function SchedulePage() {
           setPrefillDayOfWeek(undefined);
           setShowForm(true);
         }}
-        className="fixed bottom-4 right-4 w-12 h-12 rounded-full bg-brand text-white text-xl shadow-lg flex items-center justify-center hover:bg-brand-dark active:scale-95 transition-all z-30"
+        className="fixed bottom-16 right-4 w-12 h-12 rounded-full bg-brand text-white text-xl shadow-lg flex items-center justify-center hover:bg-brand-dark active:scale-95 transition-all z-30"
       >
         +
       </button>
