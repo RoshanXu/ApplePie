@@ -111,6 +111,34 @@ export default function GamePage() {
   const [progressMsg, setProgressMsg] = useState("");
   const [progressPct, setProgressPct] = useState(0);
   const [hasSave, setHasSave] = useState(false);
+  const progressTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Simulate progress while waiting for SSE events
+  const startProgressTimer = useCallback(() => {
+    if (progressTimerRef.current) clearInterval(progressTimerRef.current);
+    const stages = [
+      { pct: 10, msg: "正在构思故事大纲..." },
+      { pct: 18, msg: "正在设计角色形象..." },
+      { pct: 28, msg: "正在编写剧情对白..." },
+      { pct: 40, msg: "正在绘制场景画面..." },
+      { pct: 55, msg: "画面渲染中..." },
+    ];
+    let step = 0;
+    progressTimerRef.current = setInterval(() => {
+      if (step < stages.length) {
+        setProgressPct(stages[step].pct);
+        setProgressMsg(stages[step].msg);
+        step++;
+      }
+    }, 4000);
+  }, []);
+
+  const stopProgressTimer = useCallback(() => {
+    if (progressTimerRef.current) {
+      clearInterval(progressTimerRef.current);
+      progressTimerRef.current = null;
+    }
+  }, []);
 
   // Check for saved game on mount
   useEffect(() => {
@@ -205,6 +233,7 @@ export default function GamePage() {
       // Scene transition — call API
       setPhase("generating");
       setChoices(null);
+      startProgressTimer();
 
       const session = sessionRef.current;
       if (!session) {
@@ -230,16 +259,19 @@ export default function GamePage() {
             }
           },
           onBeatChange: (b) => {
+            stopProgressTimer();
             setBeat(b);
             setProgressMsg("剧情生成中...");
-            setProgressPct((prev) => Math.min(prev + 8, 60));
+            setProgressPct((prev) => Math.max(prev, 45) + 5);
           },
           onImageChange: (url) => {
+            stopProgressTimer();
             setImageUrl(url);
             setProgressMsg("画面绘制完成");
             setProgressPct(80);
           },
           onChoicesChange: (c) => {
+            stopProgressTimer();
             setChoices(c);
             setProgressMsg("即将就绪...");
             setProgressPct(90);
@@ -269,13 +301,15 @@ export default function GamePage() {
         navigateToBeat(result.scene.entryBeatId);
 
         // Save after scene loads
+        stopProgressTimer();
         setTimeout(() => saveGame(), 100);
       } catch (err) {
+        stopProgressTimer();
         setError(err instanceof Error ? err.message : "Scene fetch failed");
         setPhase("error");
       }
     }
-  }, [navigateToBeat]);
+  }, [navigateToBeat, startProgressTimer, stopProgressTimer, saveGame]);
 
   // Start game
   const handleStart = useCallback(async (theme: string) => {
@@ -285,6 +319,7 @@ export default function GamePage() {
     setError(null);
     setProgressMsg("正在连接 AI 引擎...");
     setProgressPct(5);
+    startProgressTimer();
 
     try {
       const result = await startGameStream(
@@ -298,16 +333,19 @@ export default function GamePage() {
             }
           },
           onBeatChange: (b) => {
+            stopProgressTimer();
             setBeat(b);
             setProgressMsg("剧情生成中...");
-            setProgressPct((prev) => Math.min(prev + 8, 60));
+            setProgressPct((prev) => Math.max(prev, 45) + 5);
           },
           onImageChange: (url) => {
+            stopProgressTimer();
             setImageUrl(url);
             setProgressMsg("画面绘制完成");
             setProgressPct(80);
           },
           onChoicesChange: (c) => {
+            stopProgressTimer();
             setChoices(c);
             setProgressMsg("即将就绪...");
             setProgressPct(90);
@@ -350,12 +388,14 @@ export default function GamePage() {
       }
 
       // Save game after first scene loads
+      stopProgressTimer();
       setTimeout(() => saveGame(), 100);
     } catch (err) {
+      stopProgressTimer();
       setError(err instanceof Error ? err.message : "Failed to start game");
       setPhase("error");
     }
-  }, []);
+  }, [stopProgressTimer, saveGame]);
 
   // Continue from saved game
   const handleContinue = useCallback(() => {
