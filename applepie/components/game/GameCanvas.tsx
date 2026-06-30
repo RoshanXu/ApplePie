@@ -96,7 +96,6 @@ export function GameCanvas({
   const beatKey = beat?.id ?? "";
 
   const { shown, done, skip } = useTypewriter(displayText, beatKey, 35);
-  const [imageLoaded, setImageLoaded] = useState(false);
 
   // Handle tap
   const handleTap = () => {
@@ -226,13 +225,15 @@ export function GameCanvas({
       {/* Background image */}
       {imageUrl && (
         <img
+          key={imageUrl}
           src={imageUrl}
           alt=""
-          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${
-            imageLoaded ? "opacity-100" : "opacity-0"
-          }`}
-          onLoad={() => setImageLoaded(true)}
+          className="absolute inset-0 w-full h-full object-cover"
         />
+      )}
+      {/* Dark gradient fallback when no image */}
+      {!imageUrl && (
+        <div className="absolute inset-0 bg-gradient-to-b from-gray-900 to-black" />
       )}
 
       {/* Gradient overlays */}
