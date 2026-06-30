@@ -3,7 +3,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-const GRADES = ["初一上", "初一下", "初二上", "初二下", "初三上", "初三下"] as const;
+const GRADE_GROUPS = [
+  { label: "小学", options: ["一年级上", "一年级下", "二年级上", "二年级下", "三年级上", "三年级下", "四年级上", "四年级下", "五年级上", "五年级下", "六年级上", "六年级下"] },
+  { label: "初中", options: ["初一上", "初一下", "初二上", "初二下", "初三上", "初三下"] },
+  { label: "高中", options: ["高一上", "高一下", "高二上", "高二下", "高三上", "高三下"] },
+];
+const GRADES = GRADE_GROUPS.flatMap((g) => g.options);
 const TEXTBOOKS = ["人教版", "北师大版", "苏教版", "沪教版", "浙教版"] as const;
 const ALL_SUBJECTS = ["语文", "数学", "英语", "物理", "化学", "生物", "历史", "地理"] as const;
 const THEMES = [
@@ -100,19 +105,26 @@ export function OnboardWizard() {
 
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">选择年级</label>
-              <div className="grid grid-cols-3 gap-2">
-                {GRADES.map((g) => (
-                  <button
-                    key={g}
-                    onClick={() => setGrade(g)}
-                    className={`py-2.5 px-3 rounded-lg text-sm font-medium border transition-colors ${
-                      grade === g
-                        ? "bg-brand text-white border-brand"
-                        : "bg-surface border-border text-foreground hover:border-brand"
-                    }`}
-                  >
-                    {g}
-                  </button>
+              <div className="space-y-3 max-h-64 overflow-y-auto">
+                {GRADE_GROUPS.map((group) => (
+                  <div key={group.label}>
+                    <div className="text-xs text-muted mb-1.5">{group.label}</div>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {group.options.map((g) => (
+                        <button
+                          key={g}
+                          onClick={() => setGrade(g)}
+                          className={`py-2 rounded-lg text-xs font-medium border transition-colors ${
+                            grade === g
+                              ? "bg-brand text-white border-brand"
+                              : "bg-surface border-border text-foreground hover:border-brand"
+                          }`}
+                        >
+                          {g}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>

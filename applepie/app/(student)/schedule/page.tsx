@@ -124,23 +124,6 @@ const CAT_META: Record<string, { color: string; dot: string }> = {
 // Mock seed data for first-time use
 // ================================================================
 
-const SEED_SCHEDULES: Omit<ScheduleItem, "id" | "subCategory" | "subject" | "completed">[] = [
-  { dayOfWeek: 1, startTime: "08:00", endTime: "08:45", title: "语文", category: "learn", location: null, repeatType: "weekly" },
-  { dayOfWeek: 1, startTime: "09:00", endTime: "09:45", title: "数学", category: "learn", location: null, repeatType: "weekly" },
-  { dayOfWeek: 1, startTime: "10:00", endTime: "10:45", title: "英语", category: "learn", location: null, repeatType: "weekly" },
-  { dayOfWeek: 1, startTime: "11:00", endTime: "11:45", title: "物理", category: "learn", location: "实验室B", repeatType: "weekly" },
-  { dayOfWeek: 1, startTime: "12:00", endTime: "13:00", title: "午休", category: "rest", location: null, repeatType: "weekly" },
-  { dayOfWeek: 1, startTime: "15:30", endTime: "16:30", title: "体育课", category: "sport", location: "操场", repeatType: "weekly" },
-  { dayOfWeek: 1, startTime: "17:00", endTime: "18:30", title: "自习/作业", category: "learn", location: null, repeatType: "weekly" },
-  { dayOfWeek: 1, startTime: "19:30", endTime: "20:30", title: "围棋兴趣", category: "explore", location: "少年宫", repeatType: "weekly" },
-  { dayOfWeek: 2, startTime: "15:30", endTime: "16:30", title: "篮球班", category: "sport", location: "体育馆", repeatType: "weekly" },
-  { dayOfWeek: 3, startTime: "18:30", endTime: "19:30", title: "朋友聚餐", category: "social", location: null, repeatType: "weekly" },
-  { dayOfWeek: 4, startTime: "17:00", endTime: "18:30", title: "物理实验", category: "explore", location: "实验室A", repeatType: "weekly" },
-  { dayOfWeek: 5, startTime: "19:00", endTime: "20:30", title: "篮球班", category: "sport", location: "体育馆", repeatType: "weekly" },
-  { dayOfWeek: 3, startTime: "08:00", endTime: "08:45", title: "历史", category: "learn", location: null, repeatType: "weekly" },
-  { dayOfWeek: 3, startTime: "10:00", endTime: "10:45", title: "地理", category: "learn", location: null, repeatType: "weekly" },
-];
-
 // ================================================================
 // Page
 // ================================================================
@@ -151,7 +134,6 @@ export default function SchedulePage() {
   const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState<ScheduleItem | null>(null);
   const [saving, setSaving] = useState(false);
-  const [seeded, setSeeded] = useState(false);
 
   // Calendar state
   const [viewMode, setViewMode] = useState<"week" | "month">("week");
@@ -176,46 +158,19 @@ export default function SchedulePage() {
   const goNextMonth = () =>
     setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
 
-  // Load items from API (or seed)
+  // Load items from API
   const loadItems = useCallback(async () => {
     try {
       const res = await fetch("/api/schedule/items");
       if (!res.ok) throw new Error("Failed to load");
       const data = await res.json();
-      if (data.items?.length > 0) {
-        setItems(data.items);
-        return;
-      }
+      setItems(data.items ?? []);
     } catch {
-      // API unavailable — use local state
+      // API unavailable — empty state
+      setItems([]);
     }
-    // Seed if empty and not yet seeded
-    if (!seeded) {
-      await seedData();
-      setSeeded(true);
-    }
-  }, [seeded]);
-
-  // Seed demo data through API
-  const seedData = async () => {
-    const created: ScheduleItem[] = [];
-    for (const item of SEED_SCHEDULES) {
-      try {
-        const res = await fetch("/api/schedule/items", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(item),
-        });
-        if (res.ok) {
-          const data = await res.json();
-          created.push(data.item);
-        }
-      } catch {
-        // Skip failed seeds
-      }
-    }
-    if (created.length > 0) setItems(created);
-  };
+    setLoading(false);
+  }, []);
 
   useEffect(() => { loadItems(); }, [loadItems]);
 
@@ -338,6 +293,15 @@ export default function SchedulePage() {
           </Link>
         }
       />
+
+      {/* Empty state for new users */}
+      {!loading && items.length === 0 && (
+        <div className="px-4 py-12 text-center">
+          <div className="text-5xl mb-4">📅</div>
+          <p className="text-sm text-foreground font-medium mb-1">还没有日程</p>
+          <p className="text-xs text-muted mb-4">点击下方 + 按钮添加你的第一个日程</p>
+        </div>
+      )}
 
       {/* Category summary bar */}
       {items.length > 0 && (
