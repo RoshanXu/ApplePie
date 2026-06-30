@@ -1,98 +1,74 @@
 import type { ApplePieGameConfig } from "./configBuilder";
 
 /**
- * Build worldSetting text for "probe mode" — first-time player with no history data.
- * Covers a broad range of knowledge points since we don't yet know their weak areas.
+ * Knowledge-point episode metadata — one per scene (~5 minutes).
  */
-export function buildProbeModeWorldSetting(config: ApplePieGameConfig): string {
-  const { student, subjects, gameParams } = config;
-
-  const subjectLines = subjects
-    .map((s) => `${s.subject}：正在学习${s.currentChapter || "本学期内容"}。`)
-    .join("\n");
-
-  const targetLines = gameParams.targetKnowledge
-    .map((k) => `- ${k}`)
-    .join("\n");
-
-  return `【学生信息】
-${student.name}，${student.grade}学生，${student.age}岁，使用${student.textbookVersion}教材。
-
-【当前学习内容】
-${subjectLines}
-
-【本次游戏设置】
-这是一次知识探测游戏。请围绕以下知识点设计故事中的挑战和谜题：
-${targetLines}
-
-难度级别：${gameParams.difficulty}
-预计时长：约${gameParams.duration}分钟
-
-【故事主题】
-${gameParams.themePreference || "校园日常+奇幻冒险"}
-
-【游戏设计要求】
-1. 故事中的挑战/谜题/任务必须天然地用到上述知识点，不能让玩家觉得"在做题"
-2. 知识点要融入剧情——比如解一个密码用到函数、和NPC对话时用到文言文理解
-3. 如果玩家选择了某个解法路径，请记录这个选择反映出的思维方式倾向
-4. 每个知识点至少出现一次，让玩家有机会展示掌握程度
-5. NPC 性格鲜明，对话生动，让学生愿意互动
-6. 每个场景末尾给出 2-3 个选择分支，引导剧情向不同方向展开
-7. 最终场景给出本次游戏中玩家的表现总结（以剧情方式呈现，不是成绩单）`;
+export interface KpEpisode {
+  knowledgePoint: string;
+  subject: string;
+  gapDescription?: string;
+  errorPatterns?: string[];
 }
 
 /**
- * Build worldSetting text for "precision mode" — returning player with history.
- * Focuses on weak areas and known interests.
+ * Build a worldSetting that describes a SEQUENCE of knowledge-point episodes.
+ * The AI writer handles ONE episode per scene (~5 min each), with natural hooks
+ * between them. After all episodes, the game ends with a summary.
  */
-export function buildPrecisionModeWorldSetting(config: ApplePieGameConfig): string {
-  const { student, subjects, weakPoints, interests, gameParams } = config;
+export function buildKpQueueWorldSetting(config: ApplePieGameConfig): string {
+  const { student, subjects, episodes, weakPoints, interests, gameParams } = config;
 
   const subjectLines = subjects
-    .map((s) => `${s.subject}：${s.currentChapter || "本学期内容"}（整体掌握度：${Math.round(s.masteryLevel * 100)}%）`)
+    .map((s) => `${s.subject}：${s.currentChapter || "本学期内容"}（掌握度：${Math.round(s.masteryLevel * 100)}%）。`)
+    .join("\n");
+
+  const episodeLines = episodes
+    .map((ep, i) => {
+      const gap = ep.gapDescription ? ` | 薄弱点：${ep.gapDescription}` : "";
+      const errors = ep.errorPatterns?.length ? ` | 易错：${ep.errorPatterns.join("、")}` : "";
+      return `第${i + 1}集：${ep.knowledgePoint}（${ep.subject}）${gap}${errors}`;
+    })
     .join("\n");
 
   const gapLines = (weakPoints?.knowledgeGaps ?? [])
-    .map((g) => `· ${g.knowledgePointName}：${g.gapDescription}（严重程度：${Math.round(g.severity * 100)}%）`)
+    .map((g) => `· ${g.knowledgePointName}：${g.gapDescription}`)
     .join("\n");
 
-  const errorLines = (weakPoints?.errorPatterns ?? [])
-    .map((e) => `· ${e.type}：${e.description}（已出现 ${e.frequency} 次）`)
-    .join("\n");
-
-  const targetLines = gameParams.targetKnowledge
-    .map((k) => `- ${k}`)
-    .join("\n");
+  const interestStr = (interests?.detectedSignals ?? []).join("、") || "暂未检测";
 
   return `【学生信息】
-${student.name}，${student.grade}学生，${student.age}岁，使用${student.textbookVersion}教材。
+${student.name}，${student.grade}学生，${student.age}岁，${student.textbookVersion}教材。
 
 【学习近况】
 ${subjectLines}
 
-【需要重点巩固的薄弱环节】
-${gapLines || "无明显薄弱环节"}
+薄弱环节：${gapLines || "无"}
+兴趣倾向：${interestStr}
 
-常见错误模式：
-${errorLines || "无明显错误模式"}
+【知识点剧情序列】（共 ${episodes.length} 集，每集约5分钟）
+${episodeLines}
 
-【兴趣与偏好】
-已检测到的兴趣倾向：${(interests?.detectedSignals ?? []).join("、") || "暂未检测"}
-学生自述兴趣：${(interests?.selfReported ?? []).join("、") || "暂未提供"}
+【剧情创作规则 — 极其重要】
+你是一个教育互动故事编剧。你必须严格按照以下规则创作：
 
-【本次游戏目标】
-巩固知识点：
-${targetLines}
-难度：${gameParams.difficulty} | 时长：约${gameParams.duration}分钟
-故事主题：${gameParams.themePreference || "校园日常+奇幻冒险"}
+1. 【一次一集】每次只生成一集剧情（约5分钟，不超过8个beat）。
 
-【游戏设计要求】
-1. 挑战设计重点覆盖上述"薄弱环节"中的知识点，每个薄弱点至少设计 1 个相关场景
-2. 对于"常见错误模式"中提到的错误类型，在故事中设计对应的"陷阱选项"
-   ——选错的 NPC 反应要自然地指出问题（不能像老师训话）
-3. 已掌握的知识点可以作为"热身"挑战出现在前期场景
-4. 根据兴趣倾向信号，在剧情中融入相关元素提高吸引力
-5. NPC 对话中自然嵌入对知识点的理解和运用
-6. 每个场景末尾给出 2-3 个选择分支
-7. 最终场景以故事方式总结本局收获，顺便暗示薄弱点的改进方向`;
+2. 【按顺序推进】按上述剧集顺序，每次生成一集。场景自然衔接到下一集的知识点。
+
+3. 【每集结构】
+   - 开场钩子（30秒）：用自然场景引出本集知识点
+   - 互动挑战（2-3分钟）：1-2个需要知识的场景，玩家通过选择/决策应用知识
+   - 陷阱/拓展（1分钟）：如该知识点有常见错误，设计合理陷阱选项
+   - 总结（30秒）：剧情总结本集收获，自然衔接到下一集
+
+4. 【关键规则】
+   - 知识融入剧情，不做题 —— 玩家在冒险/探索中自然用到知识
+   - 对话像动画台词，不死板 —— NPC 有个性、有趣
+   - 陷阱选项要合理 —— 不是"明显错"而是"常见误解"，选错后NPC自然纠正
+   - 游戏时长约${gameParams.duration}分钟，难度${gameParams.difficulty}
+   - 故事主题：${gameParams.themePreference || "校园冒险"}
+
+5. 【结束规则】
+   - 所有剧集完成后，最后一个场景给出学习总结（剧情方式，非成绩单）
+   - 在非最后一集时，结尾给出"继续 / 结束"选择`;
 }

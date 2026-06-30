@@ -1,7 +1,10 @@
 // ================================================================
 // GameConfigBuilder — Assembles student data into a structured
-// game configuration that drives worldSetting generation.
+// game configuration. Each game is a sequence of ~5-minute
+// knowledge-point episodes.
 // ================================================================
+
+import type { KpEpisode } from "./templates";
 
 export interface ApplePieGameConfig {
   student: {
@@ -11,6 +14,8 @@ export interface ApplePieGameConfig {
     textbookVersion: string;
   };
   subjects: SubjectState[];
+  /** Knowledge point episodes — one per ~5-minute scene */
+  episodes: KpEpisode[];
   weakPoints?: {
     knowledgeGaps: KnowledgeGapState[];
     errorPatterns: ErrorPatternState[];
@@ -20,9 +25,9 @@ export interface ApplePieGameConfig {
     selfReported: string[];
   };
   gameParams: {
-    targetKnowledge: string[];
     difficulty: "easy" | "normal" | "hard";
-    duration: 15 | 20 | 25;
+    /** Per-episode target duration (minutes) */
+    duration: 5;
     themePreference?: string;
   };
 }
@@ -50,34 +55,31 @@ export interface ErrorPatternState {
 
 /** Theme mapping */
 const THEME_MAP: Record<string, string> = {
-  space: "星际探险 — 在浩瀚宇宙中解开物理与数学的谜题，拯救人类文明",
-  history: "古文明解密 — 穿越时空，用语文与历史知识揭开失落文明的秘密",
-  ecology: "生态守护 — 踏上保护自然生态的征程，用生物与地理知识守护地球",
+  space: "星际探险 — 在宇宙冒险中解开数理谜题",
+  history: "古文明解密 — 穿越时空破解文史知识谜题",
+  ecology: "生态守护 — 保护自然生态的科幻冒险",
   random: "校园日常+奇幻冒险",
 };
 
 /**
- * Build a game config for a student. Returns probe-mode config if the
- * student has never played; precision-mode config if they have history.
+ * Build a game config for a student. Returns probe-mode for first-time
+ * players, precision-mode with KP queue for returning players.
  */
 export async function buildGameConfig(
   studentId: string,
   options?: {
     theme?: string;
     difficulty?: "easy" | "normal" | "hard";
-    duration?: 15 | 20 | 25;
   }
 ): Promise<ApplePieGameConfig> {
-  // TODO: Fetch from DB when connected
-  // For now return a mock config for development
+  // TODO: Fetch real student + knowledge point data from DB
   return buildMockConfig(options);
 }
 
-/** Mock config for development without DB */
+/** Build a mock config with a knowledge-point episode queue */
 function buildMockConfig(options?: {
   theme?: string;
   difficulty?: "easy" | "normal" | "hard";
-  duration?: 15 | 20 | 25;
 }): ApplePieGameConfig {
   const theme = options?.theme ?? "random";
 
@@ -91,6 +93,27 @@ function buildMockConfig(options?: {
     subjects: [
       { subject: "数学", currentChapter: "第十四章 一次函数", masteryLevel: 0.6 },
       { subject: "物理", currentChapter: "第五章 透镜及其应用", masteryLevel: 0.7 },
+    ],
+    /** 3 knowledge-point episodes, ~5 min each */
+    episodes: [
+      {
+        knowledgePoint: "一次函数的图像与性质",
+        subject: "数学",
+        gapDescription: "k和b的含义容易混淆，符号经常搞反",
+        errorPatterns: ["符号错误", "k/b含义混淆"],
+      },
+      {
+        knowledgePoint: "透镜成像规律",
+        subject: "物理",
+        gapDescription: "物距像距关系记混，实像虚像判断不准",
+        errorPatterns: ["物距像距混淆", "实像虚像判断错误"],
+      },
+      {
+        knowledgePoint: "一次函数的实际应用（行程问题）",
+        subject: "数学",
+        gapDescription: "不会从文字描述建立函数模型",
+        errorPatterns: ["变量设置错误"],
+      },
     ],
     weakPoints: {
       knowledgeGaps: [
@@ -115,9 +138,8 @@ function buildMockConfig(options?: {
       selfReported: ["喜欢看科幻小说"],
     },
     gameParams: {
-      targetKnowledge: ["一次函数的图像与性质", "透镜成像规律"],
       difficulty: options?.difficulty ?? "normal",
-      duration: options?.duration ?? 20,
+      duration: 5,
       themePreference: THEME_MAP[theme] ?? THEME_MAP.random,
     },
   };

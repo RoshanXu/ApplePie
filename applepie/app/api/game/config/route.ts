@@ -12,7 +12,6 @@ export async function GET() {
     const config = await buildGameConfig("00000000-0000-0000-0000-000000000001", {
       theme: "space",
       difficulty: "normal",
-      duration: 20,
     });
     return NextResponse.json({ config });
   } catch (err) {

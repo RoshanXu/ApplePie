@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { startSession } from "@infiplot/engine";
 import { loadEngineConfig } from "@/lib/config";
-import { buildGameConfig, type ApplePieGameConfig } from "@applepie/game/configBuilder";
-import { buildProbeModeWorldSetting, buildPrecisionModeWorldSetting } from "@applepie/game/templates";
-import type { SceneStreamEvent, StartRequest, StartResponse } from "@infiplot/types";
+import { buildGameConfig } from "@applepie/game/configBuilder";
+import { buildKpQueueWorldSetting } from "@applepie/game/templates";
+import type { SceneStreamEvent, StartRequest } from "@infiplot/types";
 
 function formatSSE(event: SceneStreamEvent | { type: string; [k: string]: unknown }): string {
   return `event: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`;
@@ -14,12 +14,11 @@ export const runtime = "nodejs";
 interface GameStartBody {
   theme?: string;
   difficulty?: "easy" | "normal" | "hard";
-  duration?: 15 | 20 | 25;
 }
 
 /**
  * POST /api/game/start
- * Builds worldSetting from student data, calls infiplot engine, streams SSE.
+ * Builds knowledge-point episode worldSetting, calls infiplot engine, streams SSE.
  */
 export async function POST(req: Request) {
   let body: GameStartBody;
@@ -34,14 +33,10 @@ export async function POST(req: Request) {
     const config = await buildGameConfig("00000000-0000-0000-0000-000000000001", {
       theme: body.theme ?? "space",
       difficulty: body.difficulty ?? "normal",
-      duration: body.duration ?? 20,
     });
 
-    // 2. Determine mode and build worldSetting
-    const hasHistory = false; // TODO: check game_sessions count
-    const worldSetting = hasHistory
-      ? buildPrecisionModeWorldSetting(config)
-      : buildProbeModeWorldSetting(config);
+    // 2. Build KP queue worldSetting
+    const worldSetting = buildKpQueueWorldSetting(config);
 
     // 3. Build engine request
     const startRequest: StartRequest = {

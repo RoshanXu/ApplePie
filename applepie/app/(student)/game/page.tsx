@@ -108,6 +108,8 @@ export default function GamePage() {
   const [choices, setChoices] = useState<BeatChoice[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [sceneCount, setSceneCount] = useState(0);
+  const [episodeIndex, setEpisodeIndex] = useState(0);
+  const [totalEpisodes, setTotalEpisodes] = useState(3);
   const [progressMsg, setProgressMsg] = useState("");
   const [progressPct, setProgressPct] = useState(0);
   const [hasSave, setHasSave] = useState(false);
@@ -298,6 +300,7 @@ export default function GamePage() {
 
         setImageUrl(result.imageUrl);
         setSceneCount((c) => c + 1);
+        setEpisodeIndex((prev) => prev + 1);
         navigateToBeat(result.scene.entryBeatId);
 
         // Save after scene loads
@@ -459,6 +462,8 @@ export default function GamePage() {
       choices={choices}
       error={error}
       sceneCount={sceneCount}
+      episodeIndex={episodeIndex}
+      totalEpisodes={totalEpisodes}
       progressMsg={progressMsg}
       progressPct={progressPct}
       onAdvance={handleAdvance}

@@ -62,6 +62,10 @@ interface GameCanvasProps {
   choices: BeatChoice[] | null;
   error: string | null;
   sceneCount: number;
+  /** Current episode index (0-based) in the KP queue */
+  episodeIndex?: number;
+  /** Total episodes in the KP queue */
+  totalEpisodes?: number;
   /** Progress message during loading/generating */
   progressMsg?: string;
   /** Progress percentage 0-100 */
@@ -84,6 +88,8 @@ export function GameCanvas({
   choices,
   error,
   sceneCount,
+  episodeIndex = 0,
+  totalEpisodes = 1,
   progressMsg,
   progressPct = 0,
   onAdvance,
@@ -204,7 +210,7 @@ export function GameCanvas({
         <div className="text-center text-white px-8">
           <div className="text-5xl mb-4">🎉</div>
           <h2 className="text-xl font-bold mb-2">冒险结束！</h2>
-          <p className="text-sm text-white/60 mb-2">你完成了 {sceneCount} 个场景的旅程</p>
+          <p className="text-sm text-white/60 mb-2">你完成了 {episodeIndex + 1} 集知识点冒险</p>
           <p className="text-xs text-white/40 mb-6">AI 正在分析你的学习表现...</p>
           {onStart && (
             <button
@@ -239,10 +245,10 @@ export function GameCanvas({
       {/* Gradient overlays */}
       <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/80 pointer-events-none" />
 
-      {/* Scene count badge */}
+      {/* Episode progress badge */}
       <div className="absolute top-4 right-4 z-20">
         <span className="px-2 py-1 bg-black/40 backdrop-blur-sm rounded-full text-white/60 text-xs">
-          第 {sceneCount} 幕
+          第 {episodeIndex + 1}/{totalEpisodes} 集
         </span>
       </div>
 
