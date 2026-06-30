@@ -62,6 +62,10 @@ interface GameCanvasProps {
   choices: BeatChoice[] | null;
   error: string | null;
   sceneCount: number;
+  /** Progress message during loading/generating */
+  progressMsg?: string;
+  /** Progress percentage 0-100 */
+  progressPct?: number;
   /** Called when player taps to advance a continue beat */
   onAdvance: () => void;
   /** Called when player selects a choice */
@@ -80,6 +84,8 @@ export function GameCanvas({
   choices,
   error,
   sceneCount,
+  progressMsg,
+  progressPct = 0,
   onAdvance,
   onSelectChoice,
   onStart,
@@ -108,7 +114,7 @@ export function GameCanvas({
     }
   };
 
-  // Loading state
+  // Loading / Generating state with progress bar
   if (phase === "loading" || phase === "generating") {
     return (
       <div className="relative w-full h-screen bg-black flex items-center justify-center">
@@ -120,15 +126,31 @@ export function GameCanvas({
             className="absolute inset-0 w-full h-full object-cover opacity-30"
           />
         ) : null}
-        <div className="relative z-10 text-center text-white">
-          <div className="text-3xl mb-4 animate-pulse">
+        <div className="relative z-10 text-center text-white px-8 w-full max-w-xs">
+          {/* Icon */}
+          <div className="text-4xl mb-6">
             {phase === "loading" ? "🌌" : "⏳"}
           </div>
-          <p className="text-sm text-white/70">
-            {phase === "loading" ? "正在生成你的专属故事..." : "剧情发展中..."}
+
+          {/* Progress message */}
+          <p className="text-base text-white/90 mb-4 font-medium">
+            {progressMsg || (phase === "loading" ? "正在生成你的专属故事..." : "剧情发展中...")}
           </p>
+
+          {/* Progress bar */}
+          <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden mb-2">
+            <div
+              className="h-full bg-gradient-to-r from-brand to-brand-light rounded-full transition-all duration-500 ease-out"
+              style={{ width: `${Math.max(progressPct, 8)}%` }}
+            />
+          </div>
+
+          {/* Percentage */}
+          <p className="text-xs text-white/40">{Math.round(progressPct)}%</p>
+
+          {/* Scene count */}
           {sceneCount > 0 && (
-            <p className="text-xs text-white/40 mt-2">第 {sceneCount} 幕</p>
+            <p className="text-xs text-white/30 mt-3">第 {sceneCount} 幕</p>
           )}
         </div>
       </div>

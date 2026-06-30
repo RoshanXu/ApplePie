@@ -1,15 +1,28 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { GameCanvas } from "@/components/game/GameCanvas";
 import { startGameStream, requestSceneStream, type GamePhase } from "@applepie/game/client";
 import type { Session, Scene, Character, StoryState, Beat, BeatChoice, BeatChoiceEffect } from "@infiplot/types";
 import Link from "next/link";
 
 // ================================================================
+// localStorage keys for game session persistence
+// ================================================================
+const SAVE_KEY = "applepie_game_save";
+
+// ================================================================
 // Game entry cards (shown before game starts)
 // ================================================================
-function GameEntry({ onStart }: { onStart: (theme: string) => void }) {
+function GameEntry({
+  onStart,
+  hasSave,
+  onContinue,
+}: {
+  onStart: (theme: string) => void;
+  hasSave: boolean;
+  onContinue: () => void;
+}) {
   const [starting, setStarting] = useState(false);
 
   const handleStart = async (theme: string) => {
@@ -20,6 +33,23 @@ function GameEntry({ onStart }: { onStart: (theme: string) => void }) {
   return (
     <div className="min-h-screen bg-background p-4 space-y-4">
       <h1 className="text-xl font-bold text-foreground">🎮 AI 互动游戏</h1>
+
+      {/* Continue saved game */}
+      {hasSave && (
+        <button
+          onClick={onContinue}
+          disabled={starting}
+          className="w-full text-left bg-gradient-to-br from-brand to-brand-dark rounded-2xl p-4 text-white disabled:opacity-50"
+        >
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">▶️</span>
+            <div>
+              <h2 className="text-base font-bold">继续上次的游戏</h2>
+              <p className="text-xs text-white/70 mt-0.5">从上次离开的节点继续冒险</p>
+            </div>
+          </div>
+        </button>
+      )}
 
       <button
         onClick={() => handleStart("space")}
@@ -78,6 +108,52 @@ export default function GamePage() {
   const [choices, setChoices] = useState<BeatChoice[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [sceneCount, setSceneCount] = useState(0);
+  const [progressMsg, setProgressMsg] = useState("");
+  const [progressPct, setProgressPct] = useState(0);
+  const [hasSave, setHasSave] = useState(false);
+
+  // Check for saved game on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(SAVE_KEY);
+      if (saved) setHasSave(true);
+    } catch {
+      // localStorage unavailable
+    }
+  }, []);
+
+  // Save game state to localStorage
+  const saveGame = useCallback(() => {
+    const session = sessionRef.current;
+    const scene = sceneRef.current;
+    if (!session || !scene) return;
+    try {
+      localStorage.setItem(
+        SAVE_KEY,
+        JSON.stringify({
+          session,
+          currentScene: scene,
+          imageUrl,
+          beat,
+          sceneCount,
+          savedAt: Date.now(),
+        })
+      );
+      setHasSave(true);
+    } catch {
+      // localStorage full or unavailable
+    }
+  }, [imageUrl, beat, sceneCount]);
+
+  // Clear saved game
+  const clearSave = useCallback(() => {
+    try {
+      localStorage.removeItem(SAVE_KEY);
+    } catch {
+      // ignore
+    }
+    setHasSave(false);
+  }, []);
 
   // Mutable refs for session (avoids stale closures in SSE callbacks)
   const sessionRef = useRef<Session | null>(null);
@@ -146,10 +222,28 @@ export default function GamePage() {
         };
 
         const result = await requestSceneStream(session, exit, {
-          onPhaseChange: setPhase,
-          onBeatChange: (b) => setBeat(b),
-          onImageChange: (url) => setImageUrl(url),
-          onChoicesChange: (c) => setChoices(c),
+          onPhaseChange: (p) => {
+            setPhase(p);
+            if (p === "generating") {
+              setProgressMsg("正在构思下一幕...");
+              setProgressPct(10);
+            }
+          },
+          onBeatChange: (b) => {
+            setBeat(b);
+            setProgressMsg("剧情生成中...");
+            setProgressPct((prev) => Math.min(prev + 8, 60));
+          },
+          onImageChange: (url) => {
+            setImageUrl(url);
+            setProgressMsg("画面绘制完成");
+            setProgressPct(80);
+          },
+          onChoicesChange: (c) => {
+            setChoices(c);
+            setProgressMsg("即将就绪...");
+            setProgressPct(90);
+          },
           onError: (e) => setError(e),
         });
 
@@ -173,6 +267,9 @@ export default function GamePage() {
         setImageUrl(result.imageUrl);
         setSceneCount((c) => c + 1);
         navigateToBeat(result.scene.entryBeatId);
+
+        // Save after scene loads
+        setTimeout(() => saveGame(), 100);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Scene fetch failed");
         setPhase("error");
@@ -182,18 +279,39 @@ export default function GamePage() {
 
   // Start game
   const handleStart = useCallback(async (theme: string) => {
+    clearSave(); // New game replaces any saved progress
     setPlaying(true);
     setPhase("loading");
     setError(null);
+    setProgressMsg("正在连接 AI 引擎...");
+    setProgressPct(5);
 
     try {
       const result = await startGameStream(
         { theme, difficulty: "normal", duration: 20 },
         {
-          onPhaseChange: setPhase,
-          onBeatChange: (b) => setBeat(b),
-          onImageChange: (url) => setImageUrl(url),
-          onChoicesChange: (c) => setChoices(c),
+          onPhaseChange: (p) => {
+            setPhase(p);
+            if (p === "generating") {
+              setProgressMsg("正在构思下一幕...");
+              setProgressPct(10);
+            }
+          },
+          onBeatChange: (b) => {
+            setBeat(b);
+            setProgressMsg("剧情生成中...");
+            setProgressPct((prev) => Math.min(prev + 8, 60));
+          },
+          onImageChange: (url) => {
+            setImageUrl(url);
+            setProgressMsg("画面绘制完成");
+            setProgressPct(80);
+          },
+          onChoicesChange: (c) => {
+            setChoices(c);
+            setProgressMsg("即将就绪...");
+            setProgressPct(90);
+          },
           onError: (e) => setError(e),
         }
       );
@@ -230,14 +348,48 @@ export default function GamePage() {
           setPhase("playing");
         }
       }
+
+      // Save game after first scene loads
+      setTimeout(() => saveGame(), 100);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to start game");
       setPhase("error");
     }
   }, []);
 
+  // Continue from saved game
+  const handleContinue = useCallback(() => {
+    try {
+      const raw = localStorage.getItem(SAVE_KEY);
+      if (!raw) return;
+      const saved = JSON.parse(raw);
+
+      sessionRef.current = saved.session;
+      sceneRef.current = saved.currentScene;
+      setImageUrl(saved.imageUrl ?? null);
+      setSceneCount(saved.sceneCount ?? 1);
+      setPlaying(true);
+      setPhase("playing");
+
+      // Restore current beat
+      const entryBeat = saved.currentScene?.beats?.find(
+        (b: Beat) => b.id === saved.currentScene.entryBeatId
+      );
+      if (entryBeat) {
+        setBeat(entryBeat);
+        if (entryBeat.next?.type === "choice") {
+          setChoices(entryBeat.next.choices);
+          setPhase("choosing");
+        }
+      }
+    } catch {
+      clearSave();
+    }
+  }, [clearSave]);
+
   // Reset to entry
   const handleReset = useCallback(() => {
+    clearSave();
     setPlaying(false);
     setPhase("idle");
     setImageUrl(null);
@@ -247,10 +399,16 @@ export default function GamePage() {
     setSceneCount(0);
     sessionRef.current = null;
     sceneRef.current = null;
-  }, []);
+  }, [clearSave]);
 
   if (!playing) {
-    return <GameEntry onStart={handleStart} />;
+    return (
+      <GameEntry
+        onStart={handleStart}
+        hasSave={hasSave}
+        onContinue={handleContinue}
+      />
+    );
   }
 
   return (
@@ -261,6 +419,8 @@ export default function GamePage() {
       choices={choices}
       error={error}
       sceneCount={sceneCount}
+      progressMsg={progressMsg}
+      progressPct={progressPct}
       onAdvance={handleAdvance}
       onSelectChoice={handleSelectChoice}
       onStart={handleReset}
