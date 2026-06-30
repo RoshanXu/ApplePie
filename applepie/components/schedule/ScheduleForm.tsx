@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { DimCategory, RepeatType } from "@prisma/client";
+import { SUB_CATEGORIES, SUBJECTS } from "@/lib/constants/scheduleCategories";
 
 // ================================================================
 // Constants
@@ -23,6 +24,8 @@ interface ScheduleFormData {
   endTime: string;
   title: string;
   category: DimCategory;
+  subCategory?: string;
+  subject?: string;
   location: string;
   repeatType: RepeatType;
 }
@@ -51,6 +54,8 @@ export function ScheduleForm({ initial, onSave, onCancel, onDelete, saving }: Sc
   const [endTime, setEndTime] = useState(initial?.endTime ?? "09:00");
   const [title, setTitle] = useState(initial?.title ?? "");
   const [category, setCategory] = useState<DimCategory>(initial?.category ?? "learn");
+  const [subCategory, setSubCategory] = useState(initial?.subCategory ?? "");
+  const [subject, setSubject] = useState(initial?.subject ?? "");
   const [location, setLocation] = useState(initial?.location ?? "");
   const [repeatType, setRepeatType] = useState<RepeatType>(initial?.repeatType ?? "weekly");
   const [errors, setErrors] = useState<string[]>([]);
@@ -74,6 +79,8 @@ export function ScheduleForm({ initial, onSave, onCancel, onDelete, saving }: Sc
       endTime,
       title: title.trim(),
       category,
+      subCategory: subCategory || undefined,
+      subject: subject || undefined,
       location: location.trim(),
       repeatType,
     });
@@ -166,31 +173,61 @@ export function ScheduleForm({ initial, onSave, onCancel, onDelete, saving }: Sc
             />
           </div>
 
-          {/* Category */}
+          {/* Category — cascading selects */}
           <div>
             <label className="block text-xs font-medium text-foreground mb-2">五维分类</label>
-            <div className="space-y-1">
+
+            {/* Main category */}
+            <select
+              value={category}
+              onChange={(e) => {
+                setCategory(e.target.value as DimCategory);
+                setSubCategory("");
+                setSubject("");
+              }}
+              className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-sm text-foreground focus:outline-none focus:border-brand mb-2 appearance-none"
+            >
               {CATEGORIES.map((cat) => (
-                <button
-                  key={cat.value}
-                  onClick={() => setCategory(cat.value)}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border-l-2 text-left transition-colors ${
-                    category === cat.value
-                      ? `${cat.color} border-l-brand font-medium`
-                      : "bg-surface border border-border border-l-2 border-l-transparent hover:bg-muted/5"
-                  }`}
-                >
-                  <span className="text-base">{cat.emoji}</span>
-                  <div className="flex-1">
-                    <div className="text-sm text-foreground">{cat.label}</div>
-                    <div className="text-[10px] text-muted">{cat.hint}</div>
-                  </div>
-                  {category === cat.value && (
-                    <span className="text-brand text-xs">✓</span>
-                  )}
-                </button>
+                <option key={cat.value} value={cat.value}>
+                  {cat.emoji} {cat.label} — {cat.hint}
+                </option>
               ))}
-            </div>
+            </select>
+
+            {/* Sub-category (cascading) */}
+            {SUB_CATEGORIES[category] && SUB_CATEGORIES[category].length > 0 && (
+              <select
+                value={subCategory}
+                onChange={(e) => {
+                  setSubCategory(e.target.value);
+                  setSubject("");
+                }}
+                className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-sm text-foreground focus:outline-none focus:border-brand mb-2 appearance-none"
+              >
+                <option value="" disabled>选择二级分类</option>
+                {SUB_CATEGORIES[category].map((sub) => (
+                  <option key={sub.value} value={sub.value}>
+                    {sub.label}
+                  </option>
+                ))}
+              </select>
+            )}
+
+            {/* Subject (cascading) */}
+            {subCategory && SUBJECTS[subCategory] && SUBJECTS[subCategory].length > 0 && (
+              <select
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-sm text-foreground focus:outline-none focus:border-brand appearance-none"
+              >
+                <option value="" disabled>选择科目（三级）</option>
+                {SUBJECTS[subCategory].map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
 
           {/* Location */}

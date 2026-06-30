@@ -133,6 +133,9 @@ model Schedule {
   endTime     String       @map("end_time") // HH:mm format
   title       String
   category    DimCategory  @default(learn)
+  subCategory String?      @map("sub_category")
+  subject     String?
+  completed   Boolean      @default(false)
   location    String?
   repeatType  RepeatType   @default(weekly) @map("repeat_type")
   source      ImportSource @default(manual)

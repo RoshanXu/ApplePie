@@ -59,6 +59,8 @@ export async function POST(req: Request) {
         endTime: body.endTime,
         title: body.title.trim(),
         category: body.category as DimCategory,
+        subCategory: body.subCategory?.trim() || null,
+        subject: body.subject?.trim() || null,
         location: body.location?.trim() ?? null,
         repeatType: (body.repeatType as RepeatType) ?? "weekly",
         source: body.source ?? "manual",
@@ -89,6 +91,9 @@ export async function PUT(req: Request) {
     if (body.endTime) updateData.endTime = body.endTime;
     if (body.category && VALID_CATEGORIES.includes(body.category)) updateData.category = body.category;
     if (body.location !== undefined) updateData.location = body.location?.trim() ?? null;
+    if (body.subCategory !== undefined) updateData.subCategory = body.subCategory?.trim() || null;
+    if (body.subject !== undefined) updateData.subject = body.subject?.trim() || null;
+    if (body.completed !== undefined) updateData.completed = body.completed;
     if (body.repeatType) updateData.repeatType = body.repeatType;
 
     const item = await prisma.schedule.update({

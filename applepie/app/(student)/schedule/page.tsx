@@ -102,6 +102,9 @@ interface ScheduleItem {
   endTime: string;
   title: string;
   category: DimCategory;
+  subCategory: string | null;
+  subject: string | null;
+  completed: boolean;
   location: string | null;
   repeatType: RepeatType;
 }
@@ -121,7 +124,7 @@ const CAT_META: Record<string, { color: string; dot: string }> = {
 // Mock seed data for first-time use
 // ================================================================
 
-const SEED_SCHEDULES: Omit<ScheduleItem, "id">[] = [
+const SEED_SCHEDULES: Omit<ScheduleItem, "id" | "subCategory" | "subject" | "completed">[] = [
   { dayOfWeek: 1, startTime: "08:00", endTime: "08:45", title: "语文", category: "learn", location: null, repeatType: "weekly" },
   { dayOfWeek: 1, startTime: "09:00", endTime: "09:45", title: "数学", category: "learn", location: null, repeatType: "weekly" },
   { dayOfWeek: 1, startTime: "10:00", endTime: "10:45", title: "英语", category: "learn", location: null, repeatType: "weekly" },
@@ -156,6 +159,7 @@ export default function SchedulePage() {
     new Date(new Date().getFullYear(), new Date().getMonth(), 1)
   );
   const [prefillDayOfWeek, setPrefillDayOfWeek] = useState<number | undefined>(undefined);
+  const [dayListDate, setDayListDate] = useState<Date | null>(null);
 
   // Derived date values
   const today = useMemo(() => new Date(), []);
@@ -218,7 +222,8 @@ export default function SchedulePage() {
   // Save (create or update)
   const handleSave = async (data: {
     id?: string; dayOfWeek: number; startTime: string; endTime: string;
-    title: string; category: DimCategory; location: string; repeatType: RepeatType;
+    title: string; category: DimCategory; subCategory?: string; subject?: string;
+    location: string; repeatType: RepeatType;
   }) => {
     setSaving(true);
     try {
@@ -266,6 +271,24 @@ export default function SchedulePage() {
     }
   };
 
+  // Toggle completed
+  const toggleCompleted = async (item: ScheduleItem) => {
+    try {
+      const res = await fetch("/api/schedule/items", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: item.id, completed: !item.completed }),
+      });
+      if (!res.ok) throw new Error("Failed to toggle");
+      const json = await res.json();
+      setItems((prev) =>
+        prev.map((i) => (i.id === item.id ? json.item : i))
+      );
+    } catch {
+      // silently ignore
+    }
+  };
+
   // Close form
   const handleCancel = () => {
     setShowForm(false);
@@ -296,6 +319,8 @@ export default function SchedulePage() {
         endTime: editItem.endTime,
         title: editItem.title,
         category: editItem.category,
+        subCategory: editItem.subCategory ?? "",
+        subject: editItem.subject ?? "",
         location: editItem.location ?? "",
         repeatType: editItem.repeatType,
       }
@@ -393,28 +418,51 @@ export default function SchedulePage() {
                   <div className="flex-1 space-y-1">
                     {dayItems.length > 0 ? (
                       dayItems.map((item) => (
-                        <button
+                        <div
                           key={item.id}
-                          onClick={() => {
-                            setEditItem(item);
-                            setShowForm(true);
-                          }}
-                          className={`w-full bg-surface border border-border rounded-lg pl-2 pr-3 py-1.5 border-l-2 text-left hover:bg-muted/5 transition-colors ${
+                          className={`w-full bg-surface border border-border rounded-lg pl-2 pr-3 py-1.5 border-l-2 flex items-center gap-2 ${
                             CAT_META[item.category]?.color ?? ""
-                          }`}
+                          } ${item.completed ? "opacity-50" : ""}`}
                         >
-                          <div className="flex justify-between items-center">
-                            <span className="text-xs text-foreground">{item.title}</span>
-                            <span className="text-[10px] text-muted">
-                              {item.startTime.slice(0, 5)}-{item.endTime.slice(0, 5)}
-                            </span>
-                          </div>
-                          {item.location && (
-                            <div className="text-[9px] text-muted/60 mt-0.5">
-                              📍 {item.location}
+                          {/* Completion toggle */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleCompleted(item);
+                            }}
+                            className="shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors"
+                            style={{
+                              borderColor: item.completed ? "#7CB342" : "#C0C0C0",
+                              backgroundColor: item.completed ? "#7CB342" : "transparent",
+                            }}
+                          >
+                            {item.completed && (
+                              <span className="text-white text-[10px] leading-none">✓</span>
+                            )}
+                          </button>
+                          {/* Content — tap to edit */}
+                          <button
+                            onClick={() => {
+                              setEditItem(item);
+                              setShowForm(true);
+                            }}
+                            className="flex-1 text-left bg-transparent border-none p-0"
+                          >
+                            <div className="flex justify-between items-center">
+                              <span className={`text-xs ${item.completed ? "text-muted line-through" : "text-foreground"}`}>
+                                {item.title}
+                              </span>
+                              <span className="text-[10px] text-muted">
+                                {item.startTime.slice(0, 5)}-{item.endTime.slice(0, 5)}
+                              </span>
                             </div>
-                          )}
-                        </button>
+                            {item.location && (
+                              <div className="text-[9px] text-muted/60 mt-0.5">
+                                📍 {item.location}
+                              </div>
+                            )}
+                          </button>
+                        </div>
                       ))
                     ) : (
                       <div className="text-[10px] text-muted/25 py-1">—</div>
@@ -476,9 +524,13 @@ export default function SchedulePage() {
                   <button
                     key={date.toISOString()}
                     onClick={() => {
-                      setEditItem(null);
-                      setPrefillDayOfWeek(date.getDay());
-                      setShowForm(true);
+                      if (cellItems.length > 0) {
+                        setDayListDate(date);
+                      } else {
+                        setEditItem(null);
+                        setPrefillDayOfWeek(date.getDay());
+                        setShowForm(true);
+                      }
                     }}
                     className={`aspect-square rounded-md p-0.5 flex flex-col items-center justify-start pt-1 text-[11px] transition-colors ${
                       todayFlag
@@ -519,6 +571,96 @@ export default function SchedulePage() {
         </div>
       )}
 
+      {/* Day Schedule List overlay (month view day tap) */}
+      {dayListDate && (
+        <div
+          className="fixed inset-0 z-40 flex items-end justify-center bg-overlay"
+          onClick={() => setDayListDate(null)}
+        >
+          <div
+            className="w-full max-w-[430px] bg-background rounded-t-2xl max-h-[60vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="sticky top-0 bg-background border-b border-border px-4 py-3 flex items-center justify-between rounded-t-2xl">
+              <h3 className="text-sm font-semibold text-foreground">
+                {WEEKDAYS[dayListDate.getDay()]} {formatMD(dayListDate)}
+              </h3>
+              <button onClick={() => setDayListDate(null)} className="text-muted text-sm">
+                ✕
+              </button>
+            </div>
+
+            {/* Items */}
+            <div className="p-4 space-y-2">
+              {(items.filter((i) => i.dayOfWeek === dayListDate.getDay())).length > 0 ? (
+                items
+                  .filter((i) => i.dayOfWeek === dayListDate.getDay())
+                  .sort((a, b) => a.startTime.localeCompare(b.startTime))
+                  .map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => {
+                        setDayListDate(null);
+                        setEditItem(item);
+                        setShowForm(true);
+                      }}
+                      className={`w-full bg-surface border border-border rounded-lg pl-2 pr-3 py-2 border-l-2 text-left hover:bg-muted/5 transition-colors flex items-center gap-2 ${
+                        CAT_META[item.category]?.color ?? ""
+                      } ${item.completed ? "opacity-50" : ""}`}
+                    >
+                      {/* Mini completion circle */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleCompleted(item);
+                        }}
+                        className="shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center"
+                        style={{
+                          borderColor: item.completed ? "#7CB342" : "#C0C0C0",
+                          backgroundColor: item.completed ? "#7CB342" : "transparent",
+                        }}
+                      >
+                        {item.completed && (
+                          <span className="text-white text-[8px] leading-none">✓</span>
+                        )}
+                      </button>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-center">
+                          <span className={`text-xs truncate ${item.completed ? "text-muted line-through" : "text-foreground"}`}>
+                            {item.title}
+                          </span>
+                          <span className="text-[10px] text-muted shrink-0 ml-2">
+                            {item.startTime.slice(0, 5)}-{item.endTime.slice(0, 5)}
+                          </span>
+                        </div>
+                        {item.location && (
+                          <div className="text-[9px] text-muted/60 mt-0.5">📍 {item.location}</div>
+                        )}
+                      </div>
+                    </button>
+                  ))
+              ) : (
+                <p className="text-xs text-muted text-center py-4">暂无日程</p>
+              )}
+
+              {/* Add button */}
+              <button
+                onClick={() => {
+                  setDayListDate(null);
+                  setEditItem(null);
+                  setPrefillDayOfWeek(dayListDate.getDay());
+                  setShowForm(true);
+                }}
+                className="w-full py-2.5 border border-dashed border-brand/40 rounded-lg text-xs text-brand font-medium hover:bg-brand/5 transition-colors"
+              >
+                + 添加日程
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Add button */}
       <button
         onClick={() => {
@@ -526,7 +668,7 @@ export default function SchedulePage() {
           setPrefillDayOfWeek(undefined);
           setShowForm(true);
         }}
-        className="fixed bottom-16 right-4 w-12 h-12 rounded-full bg-brand text-white text-xl shadow-lg flex items-center justify-center hover:bg-brand-dark active:scale-95 transition-all z-30"
+        className="fixed bottom-4 right-4 w-12 h-12 rounded-full bg-brand text-white text-xl shadow-lg flex items-center justify-center hover:bg-brand-dark active:scale-95 transition-all z-30"
       >
         +
       </button>
