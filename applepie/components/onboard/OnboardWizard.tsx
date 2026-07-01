@@ -46,20 +46,16 @@ export function OnboardWizard() {
   const handleSubmit = async () => {
     setSaving(true);
     try {
-      // Build onboarding data
-      const data = {
-        grade,
-        textbookVersion: textbook,
-        nickname: nickname.trim(),
-        subjects: selectedSubjects.map((s) => ({
-          subject: s,
-          currentChapter: subjectChapters[s] || "",
-        })),
-        themePreference: theme,
-      };
-
-      // TODO: Save to API when auth is ready
-      console.log("Onboarding data:", data);
+      // Save to profile API
+      await fetch("/api/student/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nickname: nickname.trim(),
+          grade,
+          textbookVersion: textbook,
+        }),
+      });
 
       // Navigate to home
       router.push("/home");
