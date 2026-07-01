@@ -1,36 +1,62 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ApplePie 🍎
 
-## Getting Started
+> AppleU，成长可以快乐，把童年还给孩子。
 
-First, run the development server:
+AI 驱动的学习成长应用 — 以时间管理为入口、AI 互动游戏为引擎、线下实践为延伸。
+
+## 🐳 Docker 部署（推荐）
+
+目标机器仅需 Docker。支持离线部署：开发机打包 → 复制 1 个 tar 文件 → 目标机加载运行。
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# 方式一：从源码构建
+cp .env.docker.example .env   # 编辑 .env 填入配置
+docker compose up -d
+
+# 方式二：从镜像文件部署（离线）
+bash scripts/package-images.sh           # 开发机：打包镜像
+docker load -i applepie-images.tar       # 目标机：加载镜像
+docker compose up -d                     # 目标机：启动
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+详细说明见 [docs/Docker本地部署指南.md](docs/Docker本地部署指南.md)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 服务组成（2 个容器）
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| 服务 | 说明 | 端口 |
+|------|------|------|
+| `app` | Next.js 16 应用 | 3000 |
+| `postgres` | PostgreSQL 16 数据库 | 5432（内部） |
 
-## Learn More
+### 外部依赖
 
-To learn more about Next.js, take a look at the following resources:
+| 服务 | 用途 |
+|------|------|
+| DeepSeek API | AI 文本（游戏编剧、课表解析） |
+| 豆包 API | AI 视觉 + 图片生成 |
+| 小米 MiMo API | TTS 语音（可选） |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 🛠 本地开发
 
-## Deploy on Vercel
+```bash
+# 环境要求: Node.js >= 22, pnpm 9.x
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+pnpm install
+npx prisma generate
+pnpm dev
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+开发时需要本地 PostgreSQL。推荐用 Docker 快速启动：
+
+```bash
+docker run -d --name applepie-dev-db \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=applepie \
+  -p 5432:5432 \
+  postgres:16-alpine
+```
+
+然后配置 `.env.local`（参考 `.env.example`）。

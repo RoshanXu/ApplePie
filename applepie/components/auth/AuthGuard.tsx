@@ -1,63 +1,49 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { useEffect, useState, useCallback } from "react";
+
+interface User {
+  id: string;
+  nickname: string;
+  role: string;
+}
 
 interface AuthGuardProps {
   children: React.ReactNode;
-  /** Role required to access the page. If unset, any authenticated user can access. */
   requiredRole?: "student" | "parent";
-  /** Fallback to show while checking auth or if not authenticated */
   fallback?: React.ReactNode;
 }
 
 /**
- * Client-side authentication wrapper.
- * Checks Supabase session and optionally enforces role-based access.
- * Renders children only when authenticated (and matching role, if specified).
+ * Client-side auth guard. Fetches current user from /api/auth/me
+ * and optionally enforces role-based access.
  */
 export function AuthGuard({ children, requiredRole, fallback }: AuthGuardProps) {
   const [status, setStatus] = useState<"loading" | "authenticated" | "unauthorized">("loading");
-  const supabase = createClient();
+  const [user, setUser] = useState<User | null>(null);
 
-  useEffect(() => {
-    async function checkAuth() {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (!session) {
+  const checkAuth = useCallback(async () => {
+    try {
+      const res = await fetch("/api/auth/me");
+      if (!res.ok) {
         setStatus("unauthorized");
         return;
       }
-
-      if (requiredRole) {
-        const { data: userRecord } = await supabase
-          .from("users")
-          .select("role")
-          .eq("id", session.user.id)
-          .single();
-
-        if (userRecord?.role !== requiredRole) {
-          setStatus("unauthorized");
-          return;
-        }
+      const data = await res.json();
+      if (requiredRole && data.user.role !== requiredRole) {
+        setStatus("unauthorized");
+        return;
       }
-
+      setUser(data.user);
       setStatus("authenticated");
+    } catch {
+      setStatus("unauthorized");
     }
+  }, [requiredRole]);
 
+  useEffect(() => {
     checkAuth();
-
-    // Listen for auth state changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(() => {
-      checkAuth();
-    });
-
-    return () => subscription.unsubscribe();
-  }, [supabase, requiredRole]);
+  }, [checkAuth]);
 
   if (status === "loading") {
     return (
@@ -75,17 +61,14 @@ export function AuthGuard({ children, requiredRole, fallback }: AuthGuardProps) 
         <div className="flex flex-col items-center justify-center min-h-screen bg-background gap-4 p-8">
           <div className="text-4xl">🔒</div>
           <h2 className="text-lg font-semibold text-foreground">需要登录</h2>
-          <p className="text-sm text-muted text-center">
-            请先登录后再访问此页面
-          </p>
+          <p className="text-sm text-muted text-center">请先登录后再访问此页面</p>
           <button
             onClick={() => {
-              // Redirect to home for login
-              window.location.href = "/";
+              window.location.href = "/auth/login";
             }}
             className="px-6 py-2 bg-brand text-white rounded-full text-sm font-medium"
           >
-            返回首页
+            前往登录
           </button>
         </div>
       )
@@ -93,4 +76,28 @@ export function AuthGuard({ children, requiredRole, fallback }: AuthGuardProps) 
   }
 
   return <>{children}</>;
+}
+
+/** Hook to get current user and logout function */
+export function useAuth() {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.user) setUser(data.user);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
+  const logout = async () => {
+    await fetch("/api/auth/logout", { method: "POST" });
+    setUser(null);
+    window.location.href = "/auth/login";
+  };
+
+  return { user, loading, logout };
 }

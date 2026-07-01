@@ -1,0 +1,41 @@
+# Dependencies
+node_modules
+.pnp
+.pnp.*
+
+# Build output
+.next
+out
+build
+
+# Environment files (use .env for docker compose)
+.env
+.env.local
+.env.*.local
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Debug logs
+npm-debug.log*
+pnpm-debug.log*
+
+# TypeScript build info
+*.tsbuildinfo
+
+# Misc
+*.md
+!README.md
+research
+原型
