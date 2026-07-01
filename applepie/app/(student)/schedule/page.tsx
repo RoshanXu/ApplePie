@@ -562,14 +562,9 @@ export default function SchedulePage() {
                   .filter((i) => i.dayOfWeek === dayListDate.getDay())
                   .sort((a, b) => a.startTime.localeCompare(b.startTime))
                   .map((item) => (
-                    <button
+                    <div
                       key={item.id}
-                      onClick={() => {
-                        setDayListDate(null);
-                        setEditItem(item);
-                        setShowForm(true);
-                      }}
-                      className={`w-full bg-surface border border-border rounded-lg pl-2 pr-3 py-2 border-l-2 text-left hover:bg-muted/5 transition-colors flex items-center gap-2 ${
+                      className={`w-full bg-surface border border-border rounded-lg pl-2 pr-3 py-2 border-l-2 flex items-center gap-2 ${
                         CAT_META[item.category]?.color ?? ""
                       } ${item.completed ? "opacity-50" : ""}`}
                     >
@@ -589,7 +584,15 @@ export default function SchedulePage() {
                           <span className="text-white text-[8px] leading-none">✓</span>
                         )}
                       </button>
-                      <div className="flex-1 min-w-0">
+                      {/* Content — tap to edit */}
+                      <button
+                        onClick={() => {
+                          setDayListDate(null);
+                          setEditItem(item);
+                          setShowForm(true);
+                        }}
+                        className="flex-1 text-left bg-transparent border-none p-0"
+                      >
                         <div className="flex justify-between items-center">
                           <span className={`text-xs truncate ${item.completed ? "text-muted line-through" : "text-foreground"}`}>
                             {item.title}
@@ -601,8 +604,8 @@ export default function SchedulePage() {
                         {item.location && (
                           <div className="text-[9px] text-muted/60 mt-0.5">📍 {item.location}</div>
                         )}
-                      </div>
-                    </button>
+                      </button>
+                    </div>
                   ))
               ) : (
                 <p className="text-xs text-muted text-center py-4">暂无日程</p>
