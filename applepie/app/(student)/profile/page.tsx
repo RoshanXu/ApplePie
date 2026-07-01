@@ -30,6 +30,7 @@ export default function ProfilePage() {
   // Edit form state
   const [editName, setEditName] = useState("");
   const [editGrade, setEditGrade] = useState("");
+  const [editTextbook, setEditTextbook] = useState<"人教版" | "北师大版" | "苏教版" | "沪教版" | "浙教版">("人教版");
 
   // Load profile
   useEffect(() => {
@@ -55,6 +56,7 @@ export default function ProfilePage() {
     if (!profile) return;
     setEditName(profile.nickname);
     setEditGrade(profile.grade);
+    setEditTextbook((profile.textbookVersion as typeof editTextbook) ?? "人教版");
     setEditing(true);
   };
 
@@ -73,6 +75,7 @@ export default function ProfilePage() {
         body: JSON.stringify({
           nickname: editName.trim(),
           grade: editGrade,
+          textbookVersion: editTextbook,
         }),
       });
       if (!res.ok) throw new Error("Save failed");
@@ -81,7 +84,7 @@ export default function ProfilePage() {
         setProfile({
           nickname: data.profile.user?.nickname ?? editName,
           grade: data.profile.grade ?? editGrade,
-          textbookVersion: data.profile.textbookVersion ?? "人教版",
+          textbookVersion: data.profile.textbookVersion ?? editTextbook,
         });
       }
       setEditing(false);
@@ -135,6 +138,17 @@ export default function ProfilePage() {
                       ))}
                     </optgroup>
                   ))}
+                </select>
+                <select
+                  value={editTextbook}
+                  onChange={(e) => setEditTextbook(e.target.value as typeof editTextbook)}
+                  className="w-full px-3 py-1.5 bg-background border border-border rounded-lg text-sm text-foreground focus:outline-none focus:border-brand appearance-none"
+                >
+                  <option value="人教版">人教版</option>
+                  <option value="北师大版">北师大版</option>
+                  <option value="苏教版">苏教版</option>
+                  <option value="沪教版">沪教版</option>
+                  <option value="浙教版">浙教版</option>
                 </select>
                 <div className="flex gap-2">
                   <button

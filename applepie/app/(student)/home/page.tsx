@@ -1,12 +1,32 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import Link from "next/link";
 
 export default function StudentHome() {
+  const [nickname, setNickname] = useState("同学");
+  const [grade, setGrade] = useState("");
+
+  useEffect(() => {
+    fetch("/api/student/profile")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.profile) {
+          setNickname(data.profile.user?.nickname ?? "同学");
+          setGrade(data.profile.grade ?? "");
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   return (
     <div className="p-4 space-y-4">
       {/* Welcome */}
       <div className="bg-gradient-to-br from-brand to-brand-dark rounded-2xl p-5 text-white">
-        <h1 className="text-lg font-bold">你好，测试同学 👋</h1>
-        <p className="text-sm text-white/80 mt-1">今天想要探索什么？</p>
+        <h1 className="text-lg font-bold">你好，{nickname}同学 👋</h1>
+        <p className="text-sm text-white/80 mt-1">
+          {grade ? `${grade} · ` : ""}今天想要探索什么？
+        </p>
       </div>
 
       {/* Quick actions */}
